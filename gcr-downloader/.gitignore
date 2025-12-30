@@ -1,0 +1,14 @@
+# Dependencies
+node_modules
+.DS_Store
+*.log
+.env
+
+# Extension key security - NEVER COMMIT
+*.pem
+*.crx
+EXTENSION_KEYS.txt
+
+# Distribution folders
+gcr-downloader-dist/
+*.zip
