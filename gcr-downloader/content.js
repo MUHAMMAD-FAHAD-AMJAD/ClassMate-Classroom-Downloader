@@ -1962,10 +1962,15 @@ async function startEnhancedDownload() {
         console.log('[GCR Content] Download response:', response);
 
         if (response.success) {
-            await monitorDownloadProgress(response.total || selectedIds.length);
+            // Monitor progress and get final state
+            const finalProgress = await monitorDownloadProgress(response.total || selectedIds.length);
+            // Use final progress for notification (not stale initial response)
+            const completed = finalProgress?.completed || 0;
+            const total = finalProgress?.total || response.total || selectedIds.length;
+            const failed = finalProgress?.failed || 0;
             showNotification(
-                `Download complete! ${response.completed || 0}/${response.total || selectedIds.length} files downloaded.`,
-                (response.failed || 0) > 0 ? 'warning' : 'success'
+                `Download complete! ${completed}/${total} files downloaded.`,
+                failed > 0 ? 'warning' : 'success'
             );
             // Don't close overlay here - Done button will close it
         } else {
@@ -2050,7 +2055,13 @@ async function monitorDownloadProgress(totalFiles) {
         if (Date.now() - startTime > MAX_MONITOR_TIME) {
             if (progressText) progressText.textContent = 'Download timed out';
             showDoneButton(cancelBtn, doneBtn);
-            break;
+            // Return partial progress on timeout
+            return {
+                completed: lastCompleted,
+                total: totalFiles,
+                failed: 0,
+                timedOut: true
+            };
         }
 
         try {
@@ -2070,7 +2081,12 @@ async function monitorDownloadProgress(totalFiles) {
                 if (progressFill) progressFill.style.width = '100%';
                 if (progressText) progressText.textContent = `Download complete! ${response.completed || 0}/${response.total || totalFiles} files`;
                 showDoneButton(cancelBtn, doneBtn);
-                break;
+                // Return final progress state for notification
+                return {
+                    completed: response.completed || 0,
+                    total: response.total || totalFiles,
+                    failed: response.failed || 0
+                };
             }
 
             // Update progress UI
