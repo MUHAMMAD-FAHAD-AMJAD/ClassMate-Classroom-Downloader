@@ -1,0 +1,80 @@
+# ============================================
+# ClassMate Extension - Git Ignore
+# ============================================
+
+# ===========================================
+# 🔐 SECURITY - NEVER COMMIT THESE FILES
+# ===========================================
+*.pem
+*.key
+*.crx
+*.zip
+EXTENSION_KEYS.txt
+extract_key.py
+
+# ===========================================
+# 🌍 Environment Variables
+# ===========================================
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# ===========================================
+# 📦 Dependencies & Build
+# ===========================================
+node_modules/
+dist/
+build/
+*.tgz
+
+# ===========================================
+# 💻 IDE & Editor
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# ===========================================
+# 🖥️ OS Generated Files
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===========================================
+# 📝 Logs & Debug
+# ===========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================================
+# 🧪 Testing
+# ===========================================
+coverage/
+.nyc_output/
+
+# ===========================================
+# 📁 Temporary & Private Files
+# ===========================================
+*.tmp
+*.temp
+*.bak
+*.backup
+manifest.dev.json
+gcr-downloader-dist/
+GITHUB_SETUP.md
+ERROR_REPORT.md
