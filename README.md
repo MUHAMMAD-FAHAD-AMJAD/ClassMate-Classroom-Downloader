@@ -129,11 +129,20 @@ Contributions welcome! Feel free to:
 
 <p align="center">
   <strong>Muhammad Fahad Amjad</strong><br>
-  <sub>Full Stack Developer & Chrome Extension Specialist</sub>
+  <sub>Full Stack Developer & Chrome Extension Specialist</sub><br>
+  <sub>FAST-NUCES CFD Campus</sub>
 </p>
 
 <p align="center">
-  <a href="mailto:fahadamjad778@gmail.com">📧 fahadamjad778@gmail.com</a>
+  <a href="mailto:muhammadfahadamjad27@gmail.com">
+    <img src="https://img.shields.io/badge/Personal-muhammadfahadamjad27%40gmail.com-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Personal Email"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="mailto:f240005@cfd.nu.edu.pk">
+    <img src="https://img.shields.io/badge/University-f240005%40cfd.nu.edu.pk-0078D4?style=flat-square&logo=microsoft-outlook&logoColor=white" alt="University Email"/>
+  </a>
 </p>
 
 <p align="center">
@@ -148,7 +157,8 @@ Contributions welcome! Feel free to:
 
 Have questions, suggestions, or found a bug? Reach out!
 
-- **Email:** [fahadamjad778@gmail.com](mailto:fahadamjad778@gmail.com)
+- **Personal Email:** [muhammadfahadamjad27@gmail.com](mailto:muhammadfahadamjad27@gmail.com)
+- **University Email:** [f240005@cfd.nu.edu.pk](mailto:f240005@cfd.nu.edu.pk)
 - **GitHub Issues:** [Report a Bug](https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues)
 - **Website:** [classmateextension.dev](https://classmateextension.dev)
 
