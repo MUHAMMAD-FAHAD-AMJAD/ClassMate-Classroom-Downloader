@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.2-purple?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-1.0.5-purple?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/Manifest-V3-green?style=flat-square" alt="Manifest V3"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome"/>
@@ -19,7 +19,8 @@
 <p align="center">
   <a href="https://classmateextension.dev">🌐 Website</a> •
   <a href="https://classmateextension.dev/privacy.html">🔒 Privacy Policy</a> •
-  <a href="#-installation">📦 Install</a>
+  <a href="#-installation">📦 Install</a> •
+  <a href="#-contact">📧 Contact</a>
 </p>
 
 ---
@@ -124,7 +125,36 @@ Contributions welcome! Feel free to:
 
 ---
 
+## 👨‍💻 Author
+
+<p align="center">
+  <strong>Muhammad Fahad Amjad</strong><br>
+  <sub>Full Stack Developer & Chrome Extension Specialist</sub>
+</p>
+
+<p align="center">
+  <a href="mailto:fahadamjad778@gmail.com">📧 fahadamjad778@gmail.com</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD">
+    <img src="https://img.shields.io/badge/GitHub-MUHAMMAD--FAHAD--AMJAD-181717?style=flat-square&logo=github" alt="GitHub"/>
+  </a>
+</p>
+
+---
+
+## 📧 Contact
+
+Have questions, suggestions, or found a bug? Reach out!
+
+- **Email:** [fahadamjad778@gmail.com](mailto:fahadamjad778@gmail.com)
+- **GitHub Issues:** [Report a Bug](https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues)
+- **Website:** [classmateextension.dev](https://classmateextension.dev)
+
+---
+
 <p align="center">
   <strong>Made with ❤️ for students everywhere</strong><br>
-  <sub>Not affiliated with Google Inc.</sub>
+  <sub>© 2026 Muhammad Fahad Amjad • Not affiliated with Google Inc.</sub>
 </p>
