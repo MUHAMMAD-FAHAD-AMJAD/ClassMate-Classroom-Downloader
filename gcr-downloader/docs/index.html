@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassMate - Google Classroom Downloader | Download All Materials Instantly</title>
+    <meta name="description" content="Download all your Google Classroom materials with one click. Free, private, and fast bulk downloader for students.">
+    <meta name="keywords" content="Google Classroom, downloader, bulk download, Chrome extension, student tools">
+    <meta name="author" content="ClassMate Team">
+    <meta property="og:title" content="ClassMate - Google Classroom Downloader">
+    <meta property="og:description" content="Download all your Google Classroom materials instantly with one click!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://classmateextension.dev">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --accent-green: #10b981;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glow: 0 0 60px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.7;
+            color: var(--white);
+            background: var(--dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.3), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(139, 92, 246, 0.15), transparent),
+                radial-gradient(ellipse 50% 30% at 20% 80%, rgba(6, 182, 212, 0.15), transparent),
+                var(--dark);
+        }
+
+        .floating-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: rgba(99, 102, 241, 0.15);
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: rgba(139, 92, 246, 0.12);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: rgba(6, 182, 212, 0.1);
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.95); }
+            75% { transform: translate(-50px, -30px) scale(1.05); }
+        }
+
+        /* Grid Pattern */
+        .grid-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav.scrolled {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 15px 40px;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 1.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .nav-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--gray-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--white);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--white) !important;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s !important;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .nav-cta::after {
+            display: none !important;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 40px 80px;
+            position: relative;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            color: var(--gray-light);
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-badge .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+            position: relative;
+        }
+
+        .hero-logo::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--secondary));
+            border-radius: 32px;
+            z-index: -1;
+            opacity: 0.5;
+            animation: rotate 4s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-logo img {
+            width: 70px;
+            height: 70px;
+            filter: brightness(0) invert(1);
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--gray-light) 50%, var(--white) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--gray-light);
+            max-width: 600px;
+            margin: 0 auto 50px;
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--white);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-secondary {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--white);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Stats */
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-top: 80px;
+            animation: fadeInUp 0.8s ease-out 0.5s both;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--white), var(--gray-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 40px;
+            position: relative;
+        }
+
+        .section-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--white), var(--gray-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            color: var(--gray);
+            font-size: 1.125rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--white);
+        }
+
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.8;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 40px;
+            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.03), transparent);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--white);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+            position: relative;
+        }
+
+        .step-number::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .step h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--white);
+        }
+
+        .step p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        .step-connector {
+            display: none;
+        }
+
+        @media (min-width: 900px) {
+            .step-connector {
+                display: block;
+                position: absolute;
+                top: 40px;
+                right: -60px;
+                width: 80px;
+                height: 2px;
+                background: linear-gradient(90deg, var(--primary), transparent);
+            }
+
+            .step:last-child .step-connector {
+                display: none;
+            }
+        }
+
+        /* Privacy Section */
+        .privacy {
+            padding: 120px 40px;
+        }
+
+        .privacy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .privacy-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+        }
+
+        .privacy-card.highlight {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .privacy-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .privacy-list {
+            list-style: none;
+        }
+
+        .privacy-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            color: var(--gray-light);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .privacy-list li:last-child {
+            border-bottom: none;
+        }
+
+        .privacy-list .icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .privacy-list .icon.check {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .privacy-list .icon.cross {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 120px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .cta-box {
+            max-width: 800px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 32px;
+            padding: 80px 60px;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent 50%);
+            animation: pulse-bg 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-bg {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .cta-box h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .cta-box p {
+            color: var(--gray-light);
+            font-size: 1.125rem;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 40px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 1.25rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .footer-logo img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--white);
+        }
+
+        .footer-copy {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        .footer-copy a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav {
+                padding: 15px 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .hero {
+                padding: 100px 20px 60px;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .features, .how-it-works, .privacy, .cta-section {
+                padding: 80px 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-box {
+                padding: 50px 30px;
+            }
+
+            .footer-container {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* Scroll animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Code Block Styling */
+        .code-block {
+            background: var(--dark-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="floating-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    <div class="grid-pattern"></div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <img src="icon128.png" alt="ClassMate">
+                ClassMate
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#privacy">Privacy</a>
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" target="_blank" class="nav-cta">
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;margin-right:6px;"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    GitHub
+                </a>
+            </div>
+            <button class="mobile-menu-btn">☰</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span class="dot"></span>
+                Free & Open Source Chrome Extension
+            </div>
+            
+            <div class="hero-logo">
+                <img src="icon128.png" alt="ClassMate Logo">
+            </div>
+            
+            <h1>Download All Your<br><span>Classroom Materials</span><br>In One Click</h1>
+            
+            <p class="hero-description">
+                The most powerful Google Classroom bulk downloader. Save hours of time with instant downloads of PDFs, slides, docs, and more — completely free and private.
+            </p>
+            
+            <div class="hero-buttons">
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/releases" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Extension
+                </a>
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    View Source
+                </a>
+            </div>
+            
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">Free & Open Source</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">v1.0.5</div>
+                    <div class="stat-label">Latest Version</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">0 KB</div>
+                    <div class="stat-label">Data Collected</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">✨ Features</span>
+                <h2 class="section-title">Everything You Need</h2>
+                <p class="section-subtitle">Powerful features designed to save you time and keep your files organized</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🚀</div>
+                    <h3>One-Click Bulk Downloads</h3>
+                    <p>Download all your course materials, assignments, announcements, and attachments with a single click. No more tedious manual downloads.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">📁</div>
+                    <h3>Smart Organization</h3>
+                    <p>Files are automatically organized by course name and category. Find what you need instantly with intelligent folder structures.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Auto-Convert Google Files</h3>
+                    <p>Google Docs → PDF, Sheets → Excel, Slides → PDF. All conversions happen automatically for universal compatibility.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Search & Filter</h3>
+                    <p>Find files by name, type, or uploader. Advanced filtering helps you locate exactly what you're looking for in seconds.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🌙</div>
+                    <h3>Beautiful Dark Mode</h3>
+                    <p>Modern, eye-friendly interface that looks great and reduces eye strain during late-night study sessions.</p>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Privacy First</h3>
+                    <p>100% local processing. No data collection, no tracking, no external servers. Your files stay on your device.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">📦 Installation</span>
+                <h2 class="section-title">Get Started in 2 Minutes</h2>
+                <p class="section-subtitle">Simple setup process to start downloading your materials</p>
+            </div>
+            
+            <div class="steps">
+                <div class="step animate-on-scroll">
+                    <div class="step-number">1</div>
+                    <div class="step-connector"></div>
+                    <h3>Download Extension</h3>
+                    <p>Download the latest release from GitHub or clone the repository</p>
+                </div>
+                
+                <div class="step animate-on-scroll">
+                    <div class="step-number">2</div>
+                    <div class="step-connector"></div>
+                    <h3>Load in Chrome</h3>
+                    <p>Go to chrome://extensions, enable Developer Mode, click "Load unpacked"</p>
+                </div>
+                
+                <div class="step animate-on-scroll">
+                    <div class="step-number">3</div>
+                    <div class="step-connector"></div>
+                    <h3>Select Folder</h3>
+                    <p>Choose the extracted gcr-downloader folder</p>
+                </div>
+                
+                <div class="step animate-on-scroll">
+                    <div class="step-number">4</div>
+                    <h3>Start Downloading!</h3>
+                    <p>Visit Google Classroom and click the green download button</p>
+                </div>
+            </div>
+            
+            <div class="code-block animate-on-scroll" style="max-width: 600px; margin: 40px auto 0;">
+                <span style="color: var(--gray);">// Quick terminal setup</span><br>
+                <span style="color: var(--accent-green);">git clone</span> https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader.git<br>
+                <span style="color: var(--gray);">// Then load gcr-downloader folder in Chrome</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section class="privacy" id="privacy">
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">🛡️ Security</span>
+                <h2 class="section-title">Your Privacy Matters</h2>
+                <p class="section-subtitle">Transparent about what we access and what we don't</p>
+            </div>
+            
+            <div class="privacy-grid">
+                <div class="privacy-card highlight animate-on-scroll">
+                    <h3>✅ What We Access (Read-Only)</h3>
+                    <ul class="privacy-list">
+                        <li>
+                            <span class="icon check">✓</span>
+                            <span><strong>View your courses</strong> — To show your enrolled classes</span>
+                        </li>
+                        <li>
+                            <span class="icon check">✓</span>
+                            <span><strong>View course materials</strong> — To list downloadable files</span>
+                        </li>
+                        <li>
+                            <span class="icon check">✓</span>
+                            <span><strong>View announcements</strong> — To include announcement attachments</span>
+                        </li>
+                        <li>
+                            <span class="icon check">✓</span>
+                            <span><strong>View assignments</strong> — To download assignment materials</span>
+                        </li>
+                        <li>
+                            <span class="icon check">✓</span>
+                            <span><strong>Download from Drive</strong> — To save attached files locally</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="privacy-card animate-on-scroll">
+                    <h3>❌ What We DON'T Do</h3>
+                    <ul class="privacy-list">
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Collect your personal information</span>
+                        </li>
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Store your files on any server</span>
+                        </li>
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Track your usage or behavior</span>
+                        </li>
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Share any data with third parties</span>
+                        </li>
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Access your Google password</span>
+                        </li>
+                        <li>
+                            <span class="icon cross">✕</span>
+                            <span>Modify or delete anything in Classroom</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-box animate-on-scroll">
+            <h2>Ready to Save Hours of Time?</h2>
+            <p>Join thousands of students who've already simplified their study workflow with ClassMate.</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/releases" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Now — It's Free
+                </a>
+                <a href="privacy.html" class="btn btn-secondary">
+                    Read Privacy Policy
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <a href="#" class="footer-logo">
+                <img src="icon128.png" alt="ClassMate">
+                ClassMate
+            </a>
+            
+            <div class="footer-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">Installation</a>
+                <a href="#privacy">Privacy</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" target="_blank">GitHub</a>
+                <a href="mailto:f240005@cfd.nu.edu.pk">Contact</a>
+            </div>
+            
+            <div class="footer-copy">
+                Made with ❤️ by <a href="mailto:f240005@cfd.nu.edu.pk">Students, for Students</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add stagger animation delay to cards
+        document.querySelectorAll('.feature-card').forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.1}s`;
+        });
+
+        document.querySelectorAll('.step').forEach((step, index) => {
+            step.style.transitionDelay = `${index * 0.15}s`;
+        });
+    </script>
+</body>
+</html>
