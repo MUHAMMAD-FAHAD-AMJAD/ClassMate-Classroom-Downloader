@@ -99,8 +99,14 @@ async function apiRequest(url, options = {}, signal = null) {
                 const errorData = await response.json();
                 error.details = errorData.error?.message || errorData.message;
                 console.error('[GCR API] Error details:', errorData);
-            } catch (e) {
-                // Ignore JSON parse errors
+            } catch (parseError) {
+                // ERR-002 FIX: Log JSON parse failure and try to get text
+                console.warn('[GCR API] Could not parse error response as JSON:', parseError.message);
+                try {
+                    error.details = await response.text();
+                } catch (textError) {
+                    error.details = 'Could not read error response';
+                }
             }
 
             throw error;

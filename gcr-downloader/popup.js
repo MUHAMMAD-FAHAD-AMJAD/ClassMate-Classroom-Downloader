@@ -2,7 +2,64 @@
  * ClassMate - Premium Popup Script
  * UI REDESIGN: Dark-mode-first, Gen-Z SaaS aesthetic
  * Backend logic UNCHANGED
+ * HIGH-006 FIX: Added error boundary for UI crash recovery
  */
+
+// ============================================================================
+// HIGH-006 FIX: GLOBAL ERROR BOUNDARY
+// ============================================================================
+
+/**
+ * Global error handler to prevent UI crashes
+ */
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('[ClassMate] Uncaught error:', message, source, lineno);
+    showErrorState(`An unexpected error occurred. Please try refreshing. (${message})`);
+    return true; // Prevent default error handling
+};
+
+window.onunhandledrejection = function(event) {
+    console.error('[ClassMate] Unhandled promise rejection:', event.reason);
+    showErrorState('An unexpected error occurred. Please try refreshing.');
+};
+
+/**
+ * HIGH-006 FIX: Safe function wrapper for error boundary
+ * @param {Function} fn - Function to wrap
+ * @param {string} name - Function name for logging
+ * @returns {Function} Wrapped function
+ */
+function safeExecute(fn, name = 'unknown') {
+    return async function(...args) {
+        try {
+            return await fn.apply(this, args);
+        } catch (error) {
+            console.error(`[ClassMate] Error in ${name}:`, error);
+            showErrorState(`Error in ${name}: ${error.message}`);
+            return null;
+        }
+    };
+}
+
+/**
+ * HIGH-006 FIX: Show error state in UI
+ */
+function showErrorState(message) {
+    try {
+        const errorEl = document.getElementById('state-error');
+        const errorMsg = document.getElementById('error-message');
+        if (errorEl && errorMsg) {
+            errorMsg.textContent = message;
+            // Hide other states
+            document.querySelectorAll('.gcr-loading, .gcr-empty, .gcr-files-container').forEach(el => {
+                el.classList.add('hidden');
+            });
+            errorEl.classList.remove('hidden');
+        }
+    } catch (e) {
+        console.error('[ClassMate] Failed to show error state:', e);
+    }
+}
 
 // ============================================================================
 // STATE
@@ -139,9 +196,129 @@ function debounce(func, wait) {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
+    if (typeof text !== 'string') {
+        try {
+            text = String(text);
+        } catch (e) {
+            return '';
+        }
+    }
+    
+    // Limit length to prevent DoS
+    if (text.length > 10000) {
+        text = text.substring(0, 10000) + '...';
+    }
+    
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ============================================================================
+// HIGH-020 FIX: PROGRESS STATE PERSISTENCE
+// ============================================================================
+
+const PROGRESS_STATE_KEY = 'gcr_download_progress_state';
+
+/**
+ * Saves download progress state for recovery after browser close
+ * @param {Object} state - Progress state to save
+ */
+async function saveProgressState(state) {
+    try {
+        await chrome.storage.local.set({
+            [PROGRESS_STATE_KEY]: {
+                ...state,
+                lastUpdate: Date.now()
+            }
+        });
+    } catch (e) {
+        console.warn('[GCR Popup] Failed to save progress state:', e.message);
+    }
+}
+
+/**
+ * Clears saved progress state
+ */
+async function clearProgressState() {
+    try {
+        await chrome.storage.local.remove(PROGRESS_STATE_KEY);
+    } catch (e) {
+        console.warn('[GCR Popup] Failed to clear progress state:', e.message);
+    }
+}
+
+/**
+ * Restores progress state if browser was closed during download
+ */
+async function restoreProgressState() {
+    try {
+        const result = await chrome.storage.local.get(PROGRESS_STATE_KEY);
+        const state = result[PROGRESS_STATE_KEY];
+        
+        if (state && state.started) {
+            // Check if download was less than 1 hour ago
+            const elapsed = Date.now() - state.started;
+            if (elapsed < 3600000) { // 1 hour
+                const resume = confirm(
+                    `⚠️ Incomplete Download Detected\n\n` +
+                    `A download of ${state.total} files was interrupted.\n\n` +
+                    `Would you like to check its status?`
+                );
+                if (resume) {
+                    // Show progress overlay and check status
+                    elements.progressOverlay?.classList.add('visible');
+                    await monitorProgress(state.total);
+                }
+            }
+            // Clear old state
+            await clearProgressState();
+        }
+    } catch (e) {
+        console.warn('[GCR Popup] Failed to restore progress state:', e.message);
+    }
+}
+
+// ============================================================================
+// HIGH-021 FIX: ARIA LIVE REGION ANNOUNCEMENTS
+// ============================================================================
+
+/**
+ * ARIA live region element for screen reader announcements
+ */
+let ariaLiveRegion = null;
+
+/**
+ * Creates the ARIA live region for screen reader announcements
+ */
+function createAriaLiveRegion() {
+    if (ariaLiveRegion) return;
+    
+    ariaLiveRegion = document.createElement('div');
+    ariaLiveRegion.setAttribute('role', 'status');
+    ariaLiveRegion.setAttribute('aria-live', 'polite');
+    ariaLiveRegion.setAttribute('aria-atomic', 'true');
+    ariaLiveRegion.className = 'sr-only';
+    ariaLiveRegion.style.cssText = 
+        'position:absolute;width:1px;height:1px;padding:0;margin:-1px;' +
+        'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+    document.body.appendChild(ariaLiveRegion);
+}
+
+/**
+ * Announces a message to screen readers via ARIA live region
+ * @param {string} message - Message to announce
+ */
+function announceProgress(message) {
+    if (!ariaLiveRegion) {
+        createAriaLiveRegion();
+    }
+    // Clear and set to trigger announcement
+    ariaLiveRegion.textContent = '';
+    setTimeout(() => {
+        ariaLiveRegion.textContent = message;
+    }, 100);
 }
 
 // ============================================================================
@@ -962,12 +1139,51 @@ async function downloadSelected() {
 
     // Get selected file IDs (background.js expects array of ID strings)
     const selectedIds = Array.from(selectedFiles);
+    
+    // HIGH-015 FIX: Confirmation dialog for large downloads (50+ files)
+    const LARGE_DOWNLOAD_THRESHOLD = 50;
+    if (selectedIds.length >= LARGE_DOWNLOAD_THRESHOLD) {
+        const confirmed = confirm(
+            `⚠️ Large Download Warning\n\n` +
+            `You are about to download ${selectedIds.length} files.\n\n` +
+            `This may take several minutes and use significant bandwidth.\n\n` +
+            `Are you sure you want to continue?`
+        );
+        if (!confirmed) {
+            return;
+        }
+    }
+    
+    // HIGH-016 FIX: Check for files with unknown sizes and warn
+    const unknownSizeFiles = currentFiles.filter(f => 
+        selectedIds.includes(f.id) && (!f.size || f.size === 0)
+    );
+    if (unknownSizeFiles.length > 0) {
+        const proceed = confirm(
+            `⚠️ Unknown File Sizes\n\n` +
+            `${unknownSizeFiles.length} file(s) have unknown sizes and may be very large.\n\n` +
+            `Continue anyway?`
+        );
+        if (!proceed) {
+            return;
+        }
+    }
 
     // Show progress overlay
     elements.progressOverlay?.classList.add('visible');
     if (elements.progressFile) elements.progressFile.textContent = 'Starting...';
     if (elements.progressFill) elements.progressFill.style.width = '0%';
     if (elements.progressStats) elements.progressStats.textContent = `0 / ${selectedIds.length} files`;
+    
+    // HIGH-021 FIX: Announce download start for screen readers
+    announceProgress(`Starting download of ${selectedIds.length} files`);
+    
+    // HIGH-020 FIX: Save progress state before starting
+    await saveProgressState({ 
+        selectedIds, 
+        total: selectedIds.length, 
+        started: Date.now() 
+    });
 
     try {
         const response = await sendMessage({
@@ -987,6 +1203,8 @@ async function downloadSelected() {
         showError(error.message);
     } finally {
         elements.progressOverlay?.classList.remove('visible');
+        // HIGH-020 FIX: Clear saved progress on completion
+        await clearProgressState();
     }
 }
 
@@ -997,6 +1215,8 @@ async function monitorProgress(total) {
         if (!response.success || !response.active) {
             if (elements.progressFill) elements.progressFill.style.width = '100%';
             if (elements.progressFile) elements.progressFile.textContent = 'Complete!';
+            // HIGH-021 FIX: Announce completion for screen readers
+            announceProgress('Download complete');
             await new Promise(r => setTimeout(r, 1000));
             break;
         }
@@ -1005,6 +1225,19 @@ async function monitorProgress(total) {
         if (elements.progressFill) elements.progressFill.style.width = `${percent}%`;
         if (elements.progressFile) elements.progressFile.textContent = response.currentFile || 'Downloading...';
         if (elements.progressStats) elements.progressStats.textContent = `${response.completed} / ${total} files`;
+        
+        // HIGH-021 FIX: Announce progress at 25%, 50%, 75%
+        if (percent === 25 || percent === 50 || percent === 75) {
+            announceProgress(`Download ${percent}% complete, ${response.completed} of ${total} files`);
+        }
+        
+        // HIGH-020 FIX: Update saved progress state
+        await saveProgressState({
+            completed: response.completed,
+            total,
+            percent,
+            lastUpdate: Date.now()
+        });
 
         await new Promise(r => setTimeout(r, 500));
     }
@@ -1017,15 +1250,16 @@ async function cancelDownload() {
 
 async function signIn() {
     try {
+        showState('loading');
         const response = await sendMessage({ type: 'GET_AUTH_TOKEN', interactive: true });
         if (response.success) {
             loadCachedData();
         } else {
-            showError(response.error || 'Sign in failed');
+            showError(response.error || 'Sign in failed. Please try again.');
         }
     } catch (error) {
         console.error('[GCR Popup] Sign in error:', error);
-        showError(error.message);
+        showError(error.message || 'Sign in failed. Please check your connection and try again.');
     }
 }
 
@@ -1033,17 +1267,38 @@ async function signIn() {
 // MESSAGE PASSING (UNCHANGED)
 // ============================================================================
 
-function sendMessage(message) {
+/**
+ * Sends a message to the background script with timeout protection
+ * @param {Object} message - Message to send
+ * @param {number} timeoutMs - Timeout in milliseconds (default: 30s)
+ * @returns {Promise<Object>} Response
+ */
+function sendMessage(message, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            reject(new Error('Request timed out. Please try again.'));
+        }, timeoutMs);
+        
         try {
+            if (!chrome.runtime?.id) {
+                clearTimeout(timeoutId);
+                reject(new Error('Extension context invalidated. Please reopen the popup.'));
+                return;
+            }
+            
             chrome.runtime.sendMessage(message, (response) => {
+                clearTimeout(timeoutId);
+                
                 if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve(response || { success: false, error: 'No response' });
+                    const errorMsg = chrome.runtime.lastError.message || 'Unknown error';
+                    reject(new Error(errorMsg));
+                    return;
                 }
+                
+                resolve(response || { success: false, error: 'No response' });
             });
         } catch (error) {
+            clearTimeout(timeoutId);
             reject(error);
         }
     });
@@ -1191,10 +1446,132 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         selectAll();
     }
+    
+    // HIGH-022 FIX: Arrow key navigation in file list
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const fileItems = Array.from(document.querySelectorAll('.gcr-file-item'));
+        if (fileItems.length === 0) return;
+        
+        const currentIndex = fileItems.findIndex(el => el === document.activeElement);
+        let nextIndex;
+        
+        if (e.key === 'ArrowDown') {
+            nextIndex = currentIndex < fileItems.length - 1 ? currentIndex + 1 : 0;
+        } else {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : fileItems.length - 1;
+        }
+        
+        fileItems[nextIndex]?.focus();
+        e.preventDefault();
+    }
+    
+    // HIGH-022 FIX: Space to toggle selection when file is focused
+    if (e.key === ' ' && document.activeElement?.classList.contains('gcr-file-item')) {
+        e.preventDefault();
+        const checkbox = document.activeElement.querySelector('input[type=\"checkbox\"]');
+        if (checkbox) {
+            checkbox.click();
+        }
+    }
 });
 
 // Window resize - update tab indicator
 window.addEventListener('resize', updateTabIndicator);
+
+// ============================================================================
+// QUOTA WARNING UI
+// ============================================================================
+
+/**
+ * Checks rate limit status and displays warning if needed
+ * Helps users understand when they're approaching API limits
+ */
+async function checkAndDisplayQuotaStatus() {
+    try {
+        // Check if extension context is valid before making request
+        if (!chrome.runtime?.id) {
+            console.log('[ClassMate] Extension context not ready for quota check');
+            return;
+        }
+        
+        const response = await chrome.runtime.sendMessage({ type: 'GET_RATE_LIMIT_STATS' });
+        
+        if (!response?.success) {
+            // Silently fail - quota check is non-critical
+            return;
+        }
+        
+        // Show warning when tokens are low (less than 10 out of 90)
+        if (response.availableTokens < 10) {
+            showQuotaWarning(`⚠️ API rate limit low (${response.availableTokens} requests remaining). Downloads may be slower.`);
+            return;
+        }
+        
+        // Show warning during backoff period
+        if (response.isInBackoff) {
+            const seconds = Math.ceil(response.backoffRemaining / 1000);
+            showQuotaWarning(`⏳ Rate limited by Google. Resuming in ${seconds}s...`);
+            
+            // Auto-refresh the warning countdown
+            if (seconds > 0) {
+                setTimeout(checkAndDisplayQuotaStatus, 1000);
+            }
+            return;
+        }
+        
+        // Hide warning if everything is OK
+        hideQuotaWarning();
+        
+    } catch (e) {
+        // HIGH-024 FIX: Log non-critical errors for debugging instead of swallowing
+        console.debug('[GCR Popup] Quota check failed (non-critical):', e.message || e);
+        // This prevents popup from breaking if background script isn't ready
+    }
+}
+
+/**
+ * Shows quota warning banner at top of popup
+ * @param {string} message - Warning message to display
+ */
+function showQuotaWarning(message) {
+    let warningEl = document.getElementById('gcr-quota-warning');
+    
+    if (!warningEl) {
+        warningEl = document.createElement('div');
+        warningEl.id = 'gcr-quota-warning';
+        warningEl.style.cssText = `
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            border-radius: 8px;
+            margin: 10px 16px;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+            animation: fadeIn 0.3s ease-out;
+        `;
+        
+        // Insert at the top of the popup content
+        const container = document.getElementById('popup-container');
+        if (container && container.firstChild) {
+            container.insertBefore(warningEl, container.firstChild);
+        }
+    }
+    
+    warningEl.textContent = message;
+    warningEl.style.display = 'block';
+}
+
+/**
+ * Hides the quota warning banner
+ */
+function hideQuotaWarning() {
+    const warningEl = document.getElementById('gcr-quota-warning');
+    if (warningEl) {
+        warningEl.style.display = 'none';
+    }
+}
 
 // ============================================================================
 // INITIALIZATION
@@ -1202,8 +1579,18 @@ window.addEventListener('resize', updateTabIndicator);
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[ClassMate] Initializing premium UI...');
+    
+    // HIGH-021 FIX: Create ARIA live region for screen reader announcements
+    createAriaLiveRegion();
+    
     initTheme();
     loadCachedData();
+    
+    // HIGH-020 FIX: Check for interrupted downloads
+    restoreProgressState();
+    
+    // Check quota status and display warning if needed
+    checkAndDisplayQuotaStatus();
 
     // Initial tab indicator position
     setTimeout(updateTabIndicator, 100);

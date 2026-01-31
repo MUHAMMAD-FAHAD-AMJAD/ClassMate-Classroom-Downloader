@@ -8,7 +8,12 @@ node_modules
 *.pem
 *.crx
 EXTENSION_KEYS.txt
+manifest.dev.json
 
 # Distribution folders
 gcr-downloader-dist/
 *.zip
+
+# Private/Setup files - NOT for GitHub
+GITHUB_SETUP.md
+ERROR_REPORT.md

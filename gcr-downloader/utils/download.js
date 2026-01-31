@@ -78,6 +78,16 @@ const RETRY_DELAY_MS = 2000;
  */
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';
 
+/**
+ * HIGH-002 FIX: Offline retry queue storage key
+ */
+const OFFLINE_QUEUE_KEY = 'gcr_offline_queue';
+
+/**
+ * HIGH-002 FIX: Max offline queue size to prevent unbounded growth
+ */
+const MAX_OFFLINE_QUEUE_SIZE = 100;
+
 // ============================================================================
 // STATE
 // ============================================================================
@@ -116,6 +126,148 @@ let usedFilenames = new Set();
  * Download abort flag
  */
 let abortDownloads = false;
+
+// ============================================================================
+// HIGH-002 FIX: OFFLINE RETRY QUEUE
+// ============================================================================
+
+/**
+ * Adds failed download to offline queue for later retry
+ * @param {Object} job - Download job that failed
+ * @param {string} reason - Failure reason
+ * @returns {Promise<boolean>} Success status
+ */
+async function addToOfflineQueue(job, reason) {
+    try {
+        const result = await chrome.storage.local.get(OFFLINE_QUEUE_KEY);
+        const queue = result[OFFLINE_QUEUE_KEY] || [];
+        
+        // Prevent unbounded growth
+        if (queue.length >= MAX_OFFLINE_QUEUE_SIZE) {
+            console.warn('[GCR Download] Offline queue full, dropping oldest item');
+            queue.shift();
+        }
+        
+        // Check for duplicates by file ID
+        const exists = queue.some(item => item.fileId === job.fileId);
+        if (exists) {
+            console.log('[GCR Download] File already in offline queue:', job.title);
+            return false;
+        }
+        
+        queue.push({
+            fileId: job.fileId,
+            title: job.title,
+            mimeType: job.mimeType,
+            size: job.size,
+            courseFolderName: job.courseFolderName,
+            reason,
+            timestamp: Date.now(),
+            retryCount: 0
+        });
+        
+        await chrome.storage.local.set({ [OFFLINE_QUEUE_KEY]: queue });
+        console.log('[GCR Download] Added to offline queue:', job.title);
+        return true;
+    } catch (e) {
+        console.error('[GCR Download] Failed to add to offline queue:', e);
+        return false;
+    }
+}
+
+/**
+ * Gets items from offline queue
+ * @returns {Promise<Array>} Offline queue items
+ */
+export async function getOfflineQueue() {
+    try {
+        const result = await chrome.storage.local.get(OFFLINE_QUEUE_KEY);
+        return result[OFFLINE_QUEUE_KEY] || [];
+    } catch (e) {
+        console.error('[GCR Download] Failed to get offline queue:', e);
+        return [];
+    }
+}
+
+/**
+ * Removes an item from the offline queue
+ * @param {string} fileId - File ID to remove
+ * @returns {Promise<boolean>} Success status
+ */
+export async function removeFromOfflineQueue(fileId) {
+    try {
+        const result = await chrome.storage.local.get(OFFLINE_QUEUE_KEY);
+        const queue = result[OFFLINE_QUEUE_KEY] || [];
+        const filtered = queue.filter(item => item.fileId !== fileId);
+        await chrome.storage.local.set({ [OFFLINE_QUEUE_KEY]: filtered });
+        return true;
+    } catch (e) {
+        console.error('[GCR Download] Failed to remove from offline queue:', e);
+        return false;
+    }
+}
+
+/**
+ * Clears the offline queue
+ * @returns {Promise<boolean>} Success status
+ */
+export async function clearOfflineQueue() {
+    try {
+        await chrome.storage.local.remove(OFFLINE_QUEUE_KEY);
+        return true;
+    } catch (e) {
+        console.error('[GCR Download] Failed to clear offline queue:', e);
+        return false;
+    }
+}
+
+/**
+ * Retries all items in offline queue
+ * Should be called when network connection is restored
+ * @param {string} courseFolderName - Folder name for downloads
+ * @returns {Promise<Object>} Retry results
+ */
+export async function retryOfflineQueue(courseFolderName) {
+    if (!navigator.onLine) {
+        return { success: false, error: 'Still offline' };
+    }
+    
+    const queue = await getOfflineQueue();
+    if (queue.length === 0) {
+        return { success: true, retried: 0, failed: 0 };
+    }
+    
+    console.log('[GCR Download] Retrying offline queue:', queue.length, 'items');
+    
+    let retried = 0;
+    let failed = 0;
+    
+    for (const item of queue) {
+        const attachment = {
+            id: item.fileId,
+            title: item.title,
+            mimeType: item.mimeType,
+            size: item.size
+        };
+        
+        const result = await downloadWithRetry(attachment, courseFolderName || item.courseFolderName);
+        
+        if (result.success) {
+            await removeFromOfflineQueue(item.fileId);
+            retried++;
+        } else {
+            // Update retry count
+            item.retryCount = (item.retryCount || 0) + 1;
+            if (item.retryCount >= MAX_DOWNLOAD_RETRIES) {
+                // Remove from queue after max retries
+                await removeFromOfflineQueue(item.fileId);
+                failed++;
+            }
+        }
+    }
+    
+    return { success: true, retried, failed };
+}
 
 // ============================================================================
 // PROGRESS TRACKING
@@ -347,6 +499,28 @@ async function downloadWithRetry(attachment, courseFolderName) {
                 await delay(RETRY_DELAY_MS * (attempt + 1)); // Exponential backoff
             }
         }
+    }
+
+    // HIGH-002 FIX: If offline, add to offline queue for later retry
+    const isNetworkError = !navigator.onLine || 
+        lastError?.message?.includes('NetworkError') ||
+        lastError?.message?.includes('Failed to fetch') ||
+        lastError?.message?.includes('net::ERR');
+    
+    if (isNetworkError) {
+        const job = {
+            fileId: attachment.id,
+            title: attachment.title,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            courseFolderName
+        };
+        await addToOfflineQueue(job, lastError?.message || 'Network error');
+        return {
+            success: false,
+            error: 'Added to offline queue for later retry',
+            queued: true
+        };
     }
 
     return {
@@ -632,6 +806,9 @@ export async function downloadFiles(courseData, selectedItems = null, onProgress
     // Collect all downloadable attachments
     const allAttachments = [];
     const links = [];
+    
+    // HIGH-018 FIX: Track file IDs to detect duplicates within batch
+    const seenFileIds = new Set();
 
     const collectAttachments = (items, sourceType) => {
         for (const item of items || []) {
@@ -639,6 +816,15 @@ export async function downloadFiles(courseData, selectedItems = null, onProgress
                 // Skip if selection is provided and item is not selected
                 if (selectedItems && !selectedItems.includes(attachment.id)) {
                     continue;
+                }
+                
+                // HIGH-018 FIX: Skip duplicate file IDs within same batch
+                if (attachment.id && seenFileIds.has(attachment.id)) {
+                    console.log('[GCR Download] Skipping duplicate file:', attachment.title, attachment.id);
+                    continue;
+                }
+                if (attachment.id) {
+                    seenFileIds.add(attachment.id);
                 }
 
                 if (attachment.isLink) {

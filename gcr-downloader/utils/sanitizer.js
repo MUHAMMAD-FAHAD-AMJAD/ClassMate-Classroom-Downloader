@@ -44,6 +44,7 @@ const PATH_TRAVERSAL_PATTERNS = [
 
 /**
  * HTML entities that indicate XSS attempts
+ * SEC-012 FIX: Enhanced patterns including unicode escapes and additional vectors
  */
 const XSS_PATTERNS = [
     /<script/gi,
@@ -57,6 +58,21 @@ const XSS_PATTERNS = [
     /<link/gi,
     /<style/gi,
     /expression\s*\(/gi, // CSS expression()
+    // SEC-012 FIX: Additional patterns
+    /\x00/g,            // NULL bytes
+    /\\u0000/gi,        // Unicode NULL escape
+    /\\x00/gi,          // Hex NULL escape
+    /<svg[^>]*onload/gi, // SVG onload attacks
+    /<img[^>]*onerror/gi, // Image error handlers
+    /<body[^>]*onload/gi, // Body onload
+    /<input[^>]*onfocus/gi, // Input focus handlers
+    /\beval\s*\(/gi,    // eval() calls
+    /\bFunction\s*\(/gi, // Function constructor
+    /\bsetTimeout\s*\(/gi, // setTimeout with strings
+    /\bsetInterval\s*\(/gi, // setInterval with strings
+    /&#x?\d*;?/gi,      // HTML entities that could encode dangerous chars
+    /<meta[^>]*http-equiv/gi, // Meta redirects
+    /<base[^>]*href/gi, // Base tag hijacking
 ];
 
 /**
@@ -246,6 +262,7 @@ export function sanitizeHtml(html) {
 /**
  * Escapes HTML entities for safe display
  * Use this for user input that should be displayed as text
+ * SEC-012 FIX: Enhanced to handle unicode, NULL bytes, and control characters
  * 
  * @param {string} text - Text to escape
  * @returns {string} Escaped text
@@ -255,6 +272,11 @@ export function escapeHtml(text) {
         return '';
     }
 
+    // SEC-012 FIX: First, remove NULL bytes and control characters
+    let safe = text
+        .replace(/\x00/g, '')  // NULL bytes
+        .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Control chars (except \t\n\r)
+
     const entityMap = {
         '&': '&amp;',
         '<': '&lt;',
@@ -263,10 +285,17 @@ export function escapeHtml(text) {
         "'": '&#39;',
         '/': '&#x2F;',
         '`': '&#x60;',
-        '=': '&#x3D;'
+        '=': '&#x3D;',
+        // SEC-012 FIX: Additional characters
+        '{': '&#x7B;',
+        '}': '&#x7D;',
+        '(': '&#x28;',
+        ')': '&#x29;',
+        '[': '&#x5B;',
+        ']': '&#x5D;'
     };
 
-    return text.replace(/[&<>"'`=/]/g, char => entityMap[char]);
+    return safe.replace(/[&<>"'`={}()\[\]]/g, char => entityMap[char] || char);
 }
 
 /**

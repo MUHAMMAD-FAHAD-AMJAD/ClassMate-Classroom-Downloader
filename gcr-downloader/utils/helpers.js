@@ -683,4 +683,24 @@ export async function removeStorage(keys) {
     });
 }
 
-console.log('[GCR] Helpers module loaded');
+// Debug mode flag - can be set via storage: chrome.storage.local.set({ gcr_debug_helpers: true })
+let debugMode = false;
+
+// Check debug mode on load (async, non-blocking)
+if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    chrome.storage.local.get(['gcr_debug_helpers'], (result) => {
+        debugMode = !!result?.gcr_debug_helpers;
+    });
+}
+
+/**
+ * Logs a debug message only if debug mode is enabled
+ * @param {...any} args - Arguments to log
+ */
+function debugLog(...args) {
+    if (debugMode) {
+        console.log('[GCR Helpers]', ...args);
+    }
+}
+
+debugLog('Helpers module loaded');

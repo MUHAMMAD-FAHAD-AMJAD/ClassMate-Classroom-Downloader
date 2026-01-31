@@ -50,6 +50,48 @@ const RATE_LIMIT_CONFIG = {
 // ============================================================================
 
 /**
+ * HIGH-004 FIX: Per-user rate limit buckets
+ * Maps user ID to their own token bucket state
+ */
+const perUserBuckets = new Map();
+
+/**
+ * Current user ID for rate limiting (set via setCurrentUser)
+ */
+let currentUserId = 'default';
+
+/**
+ * Sets the current user for per-user rate limiting
+ * @param {string} userId - User identifier (e.g., email hash)
+ */
+export function setCurrentUser(userId) {
+    currentUserId = userId || 'default';
+    // Initialize bucket for this user if not exists
+    if (!perUserBuckets.has(currentUserId)) {
+        perUserBuckets.set(currentUserId, {
+            tokens: RATE_LIMIT_CONFIG.MAX_TOKENS,
+            lastRefill: Date.now(),
+            backoffUntil: 0
+        });
+    }
+}
+
+/**
+ * Gets the current user's bucket state
+ * @returns {Object} User's bucket state
+ */
+function getUserBucket() {
+    if (!perUserBuckets.has(currentUserId)) {
+        perUserBuckets.set(currentUserId, {
+            tokens: RATE_LIMIT_CONFIG.MAX_TOKENS,
+            lastRefill: Date.now(),
+            backoffUntil: 0
+        });
+    }
+    return perUserBuckets.get(currentUserId);
+}
+
+/**
  * Rate limiter state (in-memory with persistence)
  */
 let rateLimiterState = {
@@ -297,12 +339,38 @@ export async function throttle(requestFn, priority = RATE_LIMIT_CONFIG.PRIORITY.
 
 /**
  * Reports a 429 response, triggering backoff
- * @param {number} retryAfter - Retry-After header value in seconds (optional)
+ * HIGH-010 FIX: Properly parse Retry-After header (can be seconds or HTTP-date)
+ * @param {number|string} retryAfter - Retry-After header value (optional)
  */
 export function report429(retryAfter = null) {
-    const backoffTime = retryAfter
-        ? retryAfter * 1000
-        : calculateBackoff();
+    let backoffTime;
+    
+    if (retryAfter !== null && retryAfter !== undefined) {
+        // HIGH-010 FIX: Handle both numeric seconds and HTTP-date formats
+        if (typeof retryAfter === 'string') {
+            // Try to parse as number first
+            const seconds = parseInt(retryAfter, 10);
+            if (!isNaN(seconds) && seconds > 0) {
+                backoffTime = seconds * 1000;
+            } else {
+                // Try to parse as HTTP-date
+                const dateMs = Date.parse(retryAfter);
+                if (!isNaN(dateMs)) {
+                    backoffTime = Math.max(0, dateMs - Date.now());
+                }
+            }
+        } else if (typeof retryAfter === 'number' && retryAfter > 0) {
+            backoffTime = retryAfter * 1000;
+        }
+    }
+    
+    // Fall back to calculated backoff if Retry-After not valid
+    if (!backoffTime || backoffTime <= 0) {
+        backoffTime = calculateBackoff();
+    }
+    
+    // Cap at maximum backoff
+    backoffTime = Math.min(backoffTime, RATE_LIMIT_CONFIG.MAX_BACKOFF_MS);
 
     rateLimiterState.backoffUntil = Date.now() + backoffTime;
     console.log(`[GCR RateLimiter] 429 received, backing off for ${backoffTime}ms`);

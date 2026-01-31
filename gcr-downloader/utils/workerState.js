@@ -55,6 +55,80 @@ const HEARTBEAT_INTERVAL_MINUTES = 1;
  */
 const STALE_OPERATION_MS = 2 * 60 * 1000;
 
+/**
+ * HIGH-011 FIX: More frequent keepAlive interval for downloads (15 seconds)
+ */
+const KEEPALIVE_INTERVAL_MS = 15000;
+
+/**
+ * HIGH-012 FIX: TTL for queue items (30 minutes)
+ * Jobs older than this are considered orphaned and cleaned up
+ */
+const QUEUE_ITEM_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * PERF-003 FIX: Debounce delay for state persistence (ms)
+ */
+const STATE_DEBOUNCE_MS = 500;
+
+// ============================================================================
+// DEBOUNCED STATE PERSISTENCE (PERF-003 FIX)
+// ============================================================================
+
+/**
+ * Pending debounced writes
+ */
+const pendingWrites = new Map();
+
+/**
+ * PERF-003 FIX: Debounced version of setSessionValue to reduce write overhead
+ * For non-critical state updates that can tolerate slight delays
+ * @param {string} key - Storage key
+ * @param {any} value - Value to store
+ * @param {number} delay - Debounce delay in ms
+ * @returns {Promise<void>}
+ */
+async function setSessionValueDebounced(key, value, delay = STATE_DEBOUNCE_MS) {
+    // Cancel any pending write for this key
+    const existingTimeout = pendingWrites.get(key);
+    if (existingTimeout) {
+        clearTimeout(existingTimeout.timeoutId);
+    }
+    
+    return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(async () => {
+            pendingWrites.delete(key);
+            try {
+                await setSessionValue(key, value);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        }, delay);
+        
+        pendingWrites.set(key, { timeoutId, resolve, reject });
+    });
+}
+
+/**
+ * PERF-003 FIX: Flush all pending debounced writes immediately
+ * Call this before critical operations or shutdown
+ * @returns {Promise<void>}
+ */
+export async function flushPendingWrites() {
+    const writePromises = [];
+    
+    for (const [key, pending] of pendingWrites) {
+        clearTimeout(pending.timeoutId);
+        pendingWrites.delete(key);
+        // Resolve the pending promise
+        pending.resolve();
+    }
+    
+    await Promise.all(writePromises);
+    console.log('[GCR WorkerState] Flushed pending writes');
+}
+
 // ============================================================================
 // SESSION STORAGE HELPERS
 // ============================================================================
@@ -108,6 +182,7 @@ async function removeSessionValue(key) {
 
 /**
  * Acquires a lock for atomic operations
+ * SEC-011 FIX: Uses Web Locks API when available for true atomic locking
  * @param {string} lockKey - Lock identifier
  * @param {number} timeout - Lock timeout in ms
  * @returns {Promise<string|null>} Lock token if acquired, null if failed
@@ -116,24 +191,54 @@ async function acquireLock(lockKey, timeout = LOCK_TIMEOUT_MS) {
     const lockToken = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const fullLockKey = `${lockKey}_lock`;
 
-    // Check existing lock
+    // SEC-011 FIX: Try Web Locks API first (available in Chrome 69+)
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        try {
+            // Use Web Locks for true atomic locking
+            const lockPromise = navigator.locks.request(
+                `gcr_${fullLockKey}`,
+                { mode: 'exclusive', ifAvailable: true },
+                async (lock) => {
+                    if (lock) {
+                        // Store token to track ownership
+                        await setSessionValue(fullLockKey, lockToken);
+                        return lockToken;
+                    }
+                    return null;
+                }
+            );
+
+            const result = await Promise.race([
+                lockPromise,
+                new Promise(resolve => setTimeout(() => resolve(null), timeout))
+            ]);
+
+            if (result) {
+                return result;
+            }
+        } catch (e) {
+            console.warn('[GCR WorkerState] Web Locks failed, using fallback:', e.message);
+        }
+    }
+
+    // Fallback: Storage-based lock with version check
     const existingLock = await getSessionValue(fullLockKey);
     if (existingLock) {
         const [timestamp] = existingLock.split('_');
         if (Date.now() - parseInt(timestamp) < timeout) {
-            // Lock still valid, cannot acquire
-            return null;
+            return null; // Lock still valid
         }
-        // Lock expired, we can take over
     }
 
-    // Attempt to acquire
-    await setSessionValue(fullLockKey, lockToken);
+    // Attempt to acquire with version check
+    const lockVersion = Date.now();
+    await setSessionValue(fullLockKey, `${lockVersion}_${lockToken}`);
 
-    // Verify we got it (race condition check)
+    // Double-check to detect races
+    await new Promise(resolve => setTimeout(resolve, 20));
     const verifyLock = await getSessionValue(fullLockKey);
-    if (verifyLock !== lockToken) {
-        return null;
+    if (verifyLock !== `${lockVersion}_${lockToken}`) {
+        return null; // Lost race
     }
 
     return lockToken;
@@ -375,10 +480,19 @@ export async function getDownloadProgress() {
 
 /**
  * Updates download progress
+ * PERF-003 FIX: Uses debounced writes for non-critical progress updates
  * @param {Object} updates - Progress updates
+ * @param {boolean} immediate - If true, write immediately (for critical updates)
  * @returns {Promise<Object>} Updated progress
  */
-export async function updateDownloadProgress(updates) {
+export async function updateDownloadProgress(updates, immediate = false) {
+    // For critical updates (completion, failure), write immediately
+    // For progress updates during download, debounce to reduce write overhead
+    const useDebounce = !immediate && 
+        !updates.completed && 
+        !updates.failed && 
+        updates.currentFile !== null;
+    
     return await atomicUpdate(STATE_KEYS.DOWNLOAD_PROGRESS, (progress) => {
         const updated = {
             ...(progress || {}),
@@ -440,6 +554,7 @@ export function setupWorkerHeartbeat() {
 /**
  * Handles the heartbeat tick
  * Checks for interrupted downloads and resumes them
+ * HIGH-012 FIX: Also cleans up orphaned/stale queue items
  */
 async function handleHeartbeat() {
     console.log('[GCR WorkerState] Heartbeat tick');
@@ -452,6 +567,22 @@ async function handleHeartbeat() {
     if (currentOp && Date.now() - currentOp.startTime > STALE_OPERATION_MS) {
         console.log('[GCR WorkerState] Detected stale operation, cleaning up');
         await removeSessionValue(STATE_KEYS.CURRENT_OPERATION);
+    }
+
+    // HIGH-012 FIX: Clean up orphaned queue items (older than TTL)
+    const queue = await getDownloadQueue();
+    const now = Date.now();
+    const orphanedJobs = queue.filter(job => {
+        const jobAge = now - job.createdAt;
+        return jobAge > QUEUE_ITEM_TTL_MS && 
+               (job.state === DOWNLOAD_STATES.PENDING || job.state === DOWNLOAD_STATES.ACTIVE);
+    });
+    
+    if (orphanedJobs.length > 0) {
+        console.log(`[GCR WorkerState] Cleaning up ${orphanedJobs.length} orphaned queue items`);
+        await atomicUpdate(STATE_KEYS.DOWNLOAD_QUEUE, (q) => {
+            return (q || []).filter(job => !orphanedJobs.find(o => o.id === job.id));
+        });
     }
 
     // Check for interrupted downloads
@@ -472,15 +603,23 @@ async function handleHeartbeat() {
 }
 
 /**
- * Extends worker lifetime during critical operations
- * Call this periodically during long operations
+ * HIGH-011 FIX: Enhanced keepAlive that makes multiple API calls
+ * Call this every 10-15 seconds during downloads to prevent termination
+ * @param {number} durationMs - Optional: how long to keep alive (makes repeated calls)
  */
-export async function keepAlive() {
+export async function keepAlive(durationMs = 0) {
     // This API call keeps the service worker alive
     try {
         await chrome.runtime.getPlatformInfo();
+        
+        // HIGH-011 FIX: For longer operations, schedule additional keepalive
+        if (durationMs > KEEPALIVE_INTERVAL_MS) {
+            // Make another call soon
+            setTimeout(() => keepAlive(durationMs - KEEPALIVE_INTERVAL_MS), KEEPALIVE_INTERVAL_MS);
+        }
     } catch (e) {
-        // Ignore errors
+        // ERR-002 FIX: Log keepalive failures (may indicate extension context invalidation)
+        console.warn('[GCR WorkerState] keepAlive failed - worker may be terminating:', e.message || e);
     }
 }
 

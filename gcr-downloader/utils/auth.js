@@ -22,11 +22,18 @@ import { getStorage, setStorage, removeStorage } from './helpers.js';
 
 /**
  * Storage keys for auth data
+ * SEC-002 FIX: Use dedicated keys for session storage (tokens)
  */
 const AUTH_TOKEN_KEY = 'gcr_auth_token';
 const AUTH_TIMESTAMP_KEY = 'gcr_auth_timestamp';
 const TOKEN_REFRESH_LOCK_KEY = 'gcr_token_refresh_lock';
 const PROACTIVE_REFRESH_ALARM = 'gcr-proactive-token-refresh';
+
+/**
+ * SEC-002 FIX: Token TTL - tokens should be treated as expired after this time
+ * even if not explicitly invalidated (defense in depth)
+ */
+const TOKEN_MAX_AGE_MS = 3 * 60 * 60 * 1000; // 3 hours max
 
 /**
  * Token expiry buffer - refresh 5 minutes before actual expiry
@@ -100,6 +107,11 @@ export async function getAuthToken(interactive = true) {
                     [AUTH_TOKEN_KEY]: token,
                     [AUTH_TIMESTAMP_KEY]: Date.now()
                 });
+                
+                // AUTH-002 FIX: Fetch and store actual expiry from Google
+                updateTokenExpiry(token).catch(e => {
+                    console.warn('[GCR Auth] Background expiry check failed:', e);
+                });
             } catch (e) {
                 console.warn('[GCR Auth] Failed to store token timestamp:', e);
             }
@@ -125,136 +137,247 @@ export async function isAuthenticated() {
 }
 
 /**
+ * AUTH-002 FIX: Storage key for actual token expiry time from Google
+ */
+const TOKEN_EXPIRY_KEY = 'gcr_token_expiry';
+
+/**
  * Checks if the current token might be expired
- * Based on stored timestamp and configured lifetime
+ * AUTH-002 FIX: Now uses actual expiry from Google tokeninfo when available
  * @returns {Promise<boolean>} True if token might be expired
  */
 export async function isTokenExpired() {
     try {
-        const data = await getStorage([AUTH_TIMESTAMP_KEY]);
+        const data = await getStorage([AUTH_TIMESTAMP_KEY, TOKEN_EXPIRY_KEY]);
         const timestamp = data[AUTH_TIMESTAMP_KEY];
+        const actualExpiry = data[TOKEN_EXPIRY_KEY];
 
+        // AUTH-002: Use actual expiry time if available
+        if (actualExpiry) {
+            const now = Date.now();
+            // Consider expired if within buffer of actual expiry
+            if (now >= actualExpiry - TOKEN_EXPIRY_BUFFER_MS) {
+                console.log('[GCR Auth] Token expired based on actual expiry');
+                return true;
+            }
+            return false;
+        }
+
+        // Fallback to timestamp-based check
         if (!timestamp) {
-            // No timestamp stored, assume not expired but get fresh token
             return true;
         }
 
         const elapsed = Date.now() - timestamp;
-        // Consider expired if older than lifetime minus buffer
         return elapsed > (DEFAULT_TOKEN_LIFETIME_MS - TOKEN_EXPIRY_BUFFER_MS);
     } catch (e) {
         console.warn('[GCR Auth] Error checking token expiry:', e);
-        return true; // Assume expired on error
+        return true;
+    }
+}
+
+/**
+ * AUTH-002 FIX: Fetches and stores actual token expiry from Google tokeninfo
+ * SEC-001 FIX: Uses POST body instead of URL query params to prevent token leakage
+ * @param {string} token - The access token to check
+ * @returns {Promise<number|null>} Seconds until expiry, or null on error
+ */
+async function updateTokenExpiry(token) {
+    if (!token) return null;
+    
+    try {
+        // SEC-001 FIX: Send token in POST body instead of URL query string
+        // This prevents token leakage via server logs, browser history, and Referer headers
+        const response = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `access_token=${encodeURIComponent(token)}`
+        });
+        
+        if (!response.ok) {
+            console.warn('[GCR Auth] Token info request failed:', response.status);
+            return null;
+        }
+        
+        const data = await response.json();
+        const expiresIn = parseInt(data.expires_in, 10);
+        
+        if (expiresIn > 0) {
+            const expiryTime = Date.now() + (expiresIn * 1000);
+            await setStorage({ [TOKEN_EXPIRY_KEY]: expiryTime });
+            console.log(`[GCR Auth] Token expires in ${expiresIn}s (stored actual expiry)`);
+            return expiresIn;
+        }
+        
+        return null;
+    } catch (e) {
+        console.warn('[GCR Auth] Failed to get token expiry:', e);
+        return null;
     }
 }
 
 // ============================================================================
-// TOKEN REFRESH MUTEX (Prevents Race Conditions)
+// TOKEN REFRESH MUTEX (RACE-001 FIX: Uses Web Locks API for atomic operations)
 // ============================================================================
 
 /**
- * Attempts to acquire the token refresh lock
- * Implements distributed mutex using chrome.storage.local
- * @returns {Promise<{acquired: boolean, lockId: string|null}>}
+ * Executes a callback with an exclusive lock using the Web Locks API
+ * This provides TRUE atomic locking that eliminates TOCTOU race conditions
+ * 
+ * CRITICAL FIX: The previous storage-based mutex had a race window between
+ * reading the lock state and writing the new lock, allowing multiple processes
+ * to acquire the lock simultaneously. The Web Locks API provides browser-native
+ * atomic locking.
+ * 
+ * @param {Function} callback - Async callback to execute while holding the lock
+ * @returns {Promise<any>} Result of the callback
  */
-async function acquireRefreshLock() {
+async function withRefreshLock(callback) {
+    // Check if Web Locks API is available (Chrome 69+)
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        return navigator.locks.request(
+            'gcr_token_refresh_lock',
+            { mode: 'exclusive', ifAvailable: false },
+            async (lock) => {
+                if (!lock) {
+                    console.warn('[GCR Auth] Failed to acquire Web Lock, falling back');
+                    return callback();
+                }
+                console.log('[GCR Auth] Acquired Web Lock for token refresh');
+                try {
+                    return await callback();
+                } finally {
+                    console.log('[GCR Auth] Released Web Lock');
+                }
+            }
+        );
+    }
+
+    // Fallback for environments without Web Locks (shouldn't happen in Chrome extensions)
+    console.warn('[GCR Auth] Web Locks API not available, using storage-based fallback');
+    return withStorageLock(callback);
+}
+
+/**
+ * Storage-based lock fallback (only used if Web Locks unavailable)
+ * SEC-003 FIX: Improved atomic acquisition using lock version check
+ * @param {Function} callback - Callback to execute
+ * @returns {Promise<any>}
+ */
+async function withStorageLock(callback) {
     const lockId = `lock_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const startTime = Date.now();
+    let acquired = false;
+    let lockVersion = 0;
 
+    // Attempt to acquire lock with timeout
     while (Date.now() - startTime < LOCK_MAX_WAIT_MS) {
         const data = await getStorage([TOKEN_REFRESH_LOCK_KEY]);
         const existingLock = data[TOKEN_REFRESH_LOCK_KEY];
 
         if (existingLock) {
-            // Check if lock is stale (older than timeout)
             const lockAge = Date.now() - existingLock.timestamp;
             if (lockAge < LOCK_TIMEOUT_MS) {
-                // Lock is held by another operation, wait
-                console.log('[GCR Auth] Waiting for refresh lock...');
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200));
                 continue;
             }
-            // Lock is stale, we can take it
-            console.log('[GCR Auth] Taking over stale lock');
+            // Lock expired, record its version to detect concurrent override
+            lockVersion = existingLock.version || 0;
         }
 
-        // Attempt to acquire lock
-        await setStorage({
-            [TOKEN_REFRESH_LOCK_KEY]: {
-                lockId,
-                timestamp: Date.now()
-            }
-        });
+        // SEC-003 FIX: Include version for optimistic concurrency control
+        const newLock = {
+            lockId,
+            timestamp: Date.now(),
+            version: lockVersion + 1
+        };
+        await setStorage({ [TOKEN_REFRESH_LOCK_KEY]: newLock });
 
-        // Verify we got it (double-check for race condition)
+        // SEC-003 FIX: Double-check acquisition with version verification
+        await new Promise(resolve => setTimeout(resolve, 50));
         const verifyData = await getStorage([TOKEN_REFRESH_LOCK_KEY]);
-        if (verifyData[TOKEN_REFRESH_LOCK_KEY]?.lockId === lockId) {
-            console.log('[GCR Auth] Acquired refresh lock:', lockId);
-            return { acquired: true, lockId };
+        const verifiedLock = verifyData[TOKEN_REFRESH_LOCK_KEY];
+
+        if (verifiedLock?.lockId === lockId && verifiedLock?.version === newLock.version) {
+            acquired = true;
+            break;
         }
 
-        // Another process beat us, retry
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Lost race, backoff and retry
+        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 100));
     }
 
-    console.warn('[GCR Auth] Failed to acquire refresh lock after timeout');
-    return { acquired: false, lockId: null };
+    if (!acquired) {
+        console.warn('[GCR Auth] Storage lock timeout, proceeding with caution');
+    }
+
+    try {
+        return await callback();
+    } finally {
+        if (acquired) {
+            const data = await getStorage([TOKEN_REFRESH_LOCK_KEY]);
+            if (data[TOKEN_REFRESH_LOCK_KEY]?.lockId === lockId) {
+                await removeStorage([TOKEN_REFRESH_LOCK_KEY]);
+            }
+        }
+    }
 }
 
-/**
- * Releases the token refresh lock
- * @param {string} lockId - The lock ID from acquireRefreshLock
- */
+// Legacy function stubs for compatibility (deprecated, use withRefreshLock)
+async function acquireRefreshLock() {
+    console.warn('[GCR Auth] acquireRefreshLock is deprecated, use withRefreshLock');
+    return { acquired: true, lockId: 'legacy' };
+}
+
 async function releaseRefreshLock(lockId) {
-    if (!lockId) return;
-
-    const data = await getStorage([TOKEN_REFRESH_LOCK_KEY]);
-    const existingLock = data[TOKEN_REFRESH_LOCK_KEY];
-
-    // Only release if we still own it
-    if (existingLock?.lockId === lockId) {
-        await removeStorage([TOKEN_REFRESH_LOCK_KEY]);
-        console.log('[GCR Auth] Released refresh lock:', lockId);
-    }
+    console.warn('[GCR Auth] releaseRefreshLock is deprecated');
 }
 
 /**
  * Forces a token refresh by removing cached token and getting new one
- * Uses mutex locking to prevent race conditions during concurrent refreshes
+ * Uses Web Locks API mutex to prevent race conditions during concurrent refreshes
+ * 
+ * RACE-001 FIX: Now uses withRefreshLock for true atomic operations
+ * 
  * @param {boolean} interactive - Whether to show login popup
  * @returns {Promise<string>} New access token
  */
 export async function refreshToken(interactive = true) {
     console.log('[GCR Auth] Forcing token refresh');
 
-    // Acquire lock to prevent multiple simultaneous refreshes
-    const { acquired, lockId } = await acquireRefreshLock();
+    return withRefreshLock(async () => {
+        // AUTH-001 FIX: Get new token FIRST, THEN revoke old token
+        // This prevents auth gap if new token acquisition fails
+        let newToken;
+        
+        try {
+            // First, get a new token (old token is still valid as fallback)
+            newToken = await getAuthToken(interactive);
+            
+            if (!newToken) {
+                throw new Error('Failed to obtain new token');
+            }
+        } catch (tokenError) {
+            console.error('[GCR Auth] Failed to get new token, keeping old token:', tokenError.message);
+            // Don't revoke old token - user still has some authentication
+            throw tokenError;
+        }
 
-    if (!acquired) {
-        // Another refresh is in progress, just get the current token
-        console.log('[GCR Auth] Another refresh in progress, waiting...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return getAuthToken(interactive);
-    }
-
-    try {
-        // First, revoke the cached token
+        // Only revoke old cached token AFTER we have a new one
         try {
             await revokeTokenInternal(false);
         } catch (e) {
-            console.warn('[GCR Auth] Error revoking old token:', e);
+            console.warn('[GCR Auth] Error revoking old token (non-fatal):', e);
+            // Continue - we already have the new token
         }
-
-        // Get new token
-        const newToken = await getAuthToken(interactive);
 
         // Schedule next proactive refresh
         scheduleProactiveRefresh();
 
         return newToken;
-    } finally {
-        await releaseRefreshLock(lockId);
-    }
+    });
 }
 
 // ============================================================================
@@ -336,10 +459,14 @@ export async function ensureValidTokenForBatch() {
             return false;
         }
 
-        // Validate against tokeninfo endpoint (lightweight check)
-        const response = await fetch(
-            'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + token
-        );
+        // SEC-001 FIX: Validate using POST body instead of URL query string
+        const response = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `access_token=${encodeURIComponent(token)}`
+        });
 
         if (!response.ok) {
             console.log('[GCR Auth] Token invalid, refreshing for batch...');
@@ -434,9 +561,14 @@ export async function validateToken(token) {
     if (!token) return false;
 
     try {
-        const response = await fetch(
-            'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + token
-        );
+        // SEC-001 FIX: Use POST body instead of URL query string
+        const response = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `access_token=${encodeURIComponent(token)}`
+        });
 
         if (response.ok) {
             const data = await response.json();
@@ -528,9 +660,12 @@ export async function getUserEmail() {
         const token = await getAuthToken(false);
         if (!token) return null;
 
-        const response = await fetch(
-            'https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + token
-        );
+        // SEC-001 FIX: Use Authorization header instead of URL query string
+        const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
         if (response.ok) {
             const data = await response.json();

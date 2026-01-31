@@ -18,6 +18,25 @@ const BADGE_ID = 'gcr-downloader-badge';
 const STYLE_ID = 'gcr-downloader-styles';
 const DETECTION_DEBOUNCE_MS = 500;
 
+// HIGH-014 FIX: Increased polling interval from 1s to 3s
+const POLLING_INTERVAL_MS = 3000;
+
+// HIGH-013 FIX: Throttle timeout for MutationObserver
+const MUTATION_THROTTLE_MS = 250;
+
+// HIGH-026 FIX: Namespace for all global variables to prevent pollution
+const GCR_NAMESPACE = '__classmate_gcr__';
+
+// Initialize namespace if not exists
+if (!window[GCR_NAMESPACE]) {
+    window[GCR_NAMESPACE] = {
+        courseData: null,
+        currentFilter: 'all',
+        currentFormat: null,
+        initialized: false
+    };
+}
+
 // ============================================================================
 // CSS INJECTION - Isolated from page styles
 // ============================================================================
@@ -180,7 +199,7 @@ function injectStyles() {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 12px 14px !important;
+    padding: 8px 12px !important;
     background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%) !important;
     flex-shrink: 0 !important;
 }
@@ -216,8 +235,8 @@ function injectStyles() {
 .gcr-popup-toolbar {
     display: flex !important;
     flex-direction: column !important;
-    gap: 6px !important;
-    padding: 10px 14px !important;
+    gap: 4px !important;
+    padding: 6px 12px !important;
     background: rgba(15, 23, 42, 0.5) !important;
     flex-shrink: 0 !important;
 }
@@ -226,12 +245,12 @@ function injectStyles() {
 
 .gcr-search-input {
     width: 100% !important;
-    padding: 10px 16px !important;
+    padding: 8px 12px !important;
     background: rgba(30, 41, 59, 0.8) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     color: #f1f5f9 !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     outline: none !important;
 }
 
@@ -241,7 +260,7 @@ function injectStyles() {
     flex: 1 1 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    padding: 12px 16px !important;
+    padding: 8px 12px !important;
     min-height: 0 !important;
     scrollbar-width: thin !important;
     scrollbar-color: rgba(139, 92, 246, 0.5) transparent !important;
@@ -359,7 +378,7 @@ function injectStyles() {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 10px 14px !important;
+    padding: 8px 12px !important;
     background: rgba(15, 23, 42, 0.95) !important;
     border-top: 1px solid rgba(255,255,255,0.1) !important;
     flex-shrink: 0 !important;
@@ -606,14 +625,14 @@ function injectStyles() {
 .gcr-search-clear:hover { background: rgba(255, 255, 255, 0.2) !important; color: white !important; }
 
 /* Tabs */
-.gcr-tabs-container { margin-top: 4px !important; }
+.gcr-tabs-container { margin-top: 2px !important; }
 
 .gcr-tabs {
     display: flex !important;
-    gap: 4px !important;
+    gap: 3px !important;
     background: rgba(30, 41, 59, 0.5) !important;
-    padding: 4px !important;
-    border-radius: 10px !important;
+    padding: 3px !important;
+    border-radius: 8px !important;
 }
 
 .gcr-tab {
@@ -621,12 +640,12 @@ function injectStyles() {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 4px !important;
-    padding: 8px 10px !important;
+    gap: 3px !important;
+    padding: 5px 6px !important;
     background: transparent !important;
     border: none !important;
-    border-radius: 8px !important;
-    font-size: 11px !important;
+    border-radius: 6px !important;
+    font-size: 10px !important;
     font-weight: 500 !important;
     color: #94a3b8 !important;
     cursor: pointer !important;
@@ -736,8 +755,8 @@ function injectStyles() {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    margin-top: 8px !important;
-    padding-top: 12px !important;
+    margin-top: 4px !important;
+    padding-top: 6px !important;
     border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -754,18 +773,18 @@ function injectStyles() {
 .gcr-files-list {
     display: flex !important;
     flex-direction: column !important;
-    gap: 6px !important;
+    gap: 4px !important;
     padding: 4px !important;
 }
 
 .gcr-file-card {
     display: flex;
     align-items: center !important;
-    gap: 10px !important;
-    padding: 10px 14px !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
     background: rgba(30, 41, 59, 0.5) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     width: 100% !important;
@@ -791,14 +810,14 @@ function injectStyles() {
 }
 
 .gcr-file-icon {
-    width: 32px !important;
-    height: 32px !important;
+    width: 26px !important;
+    height: 26px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     background: rgba(60, 70, 90, 0.5) !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
     flex-shrink: 0 !important;
 }
 
@@ -894,12 +913,63 @@ let detectionTimeout = null;
 let isLoading = false;
 let currentItemCount = 0;
 
+// Navigation detection resources (for cleanup to prevent memory leaks)
+let navigationObserver = null;
+let pollingInterval = null;
+
+// MEM-001: Listener registry for popup to prevent memory leaks
+const popupListenerRegistry = {
+    handlers: new Map(),
+    
+    /**
+     * Adds a tracked event listener
+     * @param {string} key - Unique key for this listener
+     * @param {EventTarget} target - Event target
+     * @param {string} event - Event type
+     * @param {Function} handler - Event handler
+     * @param {Object} options - Event listener options
+     */
+    add(key, target, event, handler, options = {}) {
+        if (!target) return;
+        target.addEventListener(event, handler, options);
+        this.handlers.set(key, { target, event, handler, options });
+    },
+    
+    /**
+     * Removes a specific listener by key
+     * @param {string} key - Listener key
+     */
+    remove(key) {
+        const entry = this.handlers.get(key);
+        if (entry) {
+            entry.target.removeEventListener(entry.event, entry.handler, entry.options);
+            this.handlers.delete(key);
+        }
+    },
+    
+    /**
+     * Removes all registered listeners (call on popup close)
+     */
+    cleanup() {
+        for (const [key, entry] of this.handlers) {
+            try {
+                entry.target.removeEventListener(entry.event, entry.handler, entry.options);
+            } catch (e) {
+                // ERR-002 FIX: Log listener cleanup failures with context
+                console.debug('[GCR Content] Listener cleanup failed for', key, '- target may have been removed:', e.message || e);
+            }
+        }
+        this.handlers.clear();
+        console.log('[GCR Content] Popup listener registry cleaned up');
+    }
+};
+
 // ============================================================================
 // BUTTON CREATION & MANAGEMENT
 // ============================================================================
 
 /**
- * Creates and injects the floating download button
+ * Creates and injects the floating download button (UI-002: Accessibility)
  */
 function createDownloadButton() {
     // Remove existing button if any
@@ -912,23 +982,34 @@ function createDownloadButton() {
     const button = document.createElement('div');
     button.id = BUTTON_ID;
     button.className = 'gcr-download-button';
+    button.setAttribute('role', 'button');
+    button.setAttribute('tabindex', '0');
+    button.setAttribute('aria-label', 'Open ClassMate download panel');
     button.innerHTML = `
     <div class="gcr-button-content">
-      <svg class="gcr-download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="gcr-download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/>
         <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
       <span class="gcr-button-text">Download</span>
-      <span id="${BADGE_ID}" class="gcr-badge gcr-badge-hidden">0</span>
+      <span id="${BADGE_ID}" class="gcr-badge gcr-badge-hidden" aria-live="polite">0</span>
     </div>
-    <div class="gcr-loading-spinner gcr-hidden">
+    <div class="gcr-loading-spinner gcr-hidden" aria-hidden="true">
       <div class="gcr-spinner"></div>
     </div>
   `;
 
     // Add click handler
     button.addEventListener('click', handleButtonClick);
+    
+    // UI-002: Add keyboard support for accessibility
+    button.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleButtonClick();
+        }
+    });
 
     // Inject into page
     document.body.appendChild(button);
@@ -1024,9 +1105,9 @@ async function handleButtonClick() {
 
     } catch (error) {
         console.error('[GCR Content] Error handling click:', error);
-        
+
         // Check if it's the extension context invalidated error
-        if (error.message?.includes('Extension context invalidated') || 
+        if (error.message?.includes('Extension context invalidated') ||
             error.message?.includes('disconnected') ||
             error.message?.includes('runtime.sendMessage')) {
             showNotification('Extension reloaded. Please refresh this page.', 'warning');
@@ -1053,23 +1134,27 @@ function openPopup(courseData) {
     window.gcrCurrentFilter = 'all';
     window.gcrCurrentFormat = null;
 
-    // Create popup overlay
+    // Create popup overlay (UI-002: ARIA attributes for accessibility)
     const overlay = document.createElement('div');
     overlay.id = 'gcr-popup-overlay';
     overlay.className = 'gcr-popup-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'gcr-popup-title');
 
     // Create popup content
     const popup = document.createElement('div');
     popup.className = 'gcr-popup';
+    popup.setAttribute('role', 'document');
 
     // Count items
     const allFiles = getAllFiles(courseData);
     console.log('[GCR Content] Files extracted:', allFiles.length, allFiles);
     const totalItems = allFiles.length;
-    
+
     // Helper to check if file is a link type
     const isLinkType = (f) => f.type === 'link' || f.type === 'youtube' || f.type === 'form';
-    
+
     // Exclude links from category counts (links have their own tab)
     const materialsCount = allFiles.filter(f => f.category === 'materials' && !isLinkType(f)).length;
     const announcementsCount = allFiles.filter(f => f.category === 'announcements' && !isLinkType(f)).length;
@@ -1081,108 +1166,108 @@ function openPopup(courseData) {
 
     popup.innerHTML = `
     <!-- Header -->
-    <div class="gcr-popup-header">
+    <div class="gcr-popup-header" role="banner">
       <div class="gcr-popup-header-left">
-        <div class="gcr-popup-logo">📚</div>
+        <div class="gcr-popup-logo" aria-hidden="true">📚</div>
         <div class="gcr-popup-header-info">
-          <h2 class="gcr-popup-header-title">ClassMate</h2>
+          <h2 class="gcr-popup-header-title" id="gcr-popup-title">ClassMate</h2>
           <span class="gcr-popup-header-subtitle">Classroom Downloader</span>
         </div>
       </div>
       <div class="gcr-popup-header-right">
-        <div class="gcr-popup-course-badge">
-          <span class="gcr-pulse-dot"></span>
+        <div class="gcr-popup-course-badge" aria-label="Current course">
+          <span class="gcr-pulse-dot" aria-hidden="true"></span>
           <span class="gcr-course-name">${escapeHtml(courseData.courseName || 'Course')}</span>
         </div>
-        <button class="gcr-popup-close" id="gcr-popup-close" title="Close">✕</button>
+        <button class="gcr-popup-close" id="gcr-popup-close" title="Close" aria-label="Close popup" tabindex="0">✕</button>
       </div>
     </div>
     
     <!-- Toolbar -->
-    <div class="gcr-popup-toolbar">
+    <div class="gcr-popup-toolbar" role="toolbar" aria-label="File selection toolbar">
       <!-- Search Row -->
       <div class="gcr-toolbar-row">
         <div class="gcr-search-wrapper">
-          <span class="gcr-search-icon">🔍</span>
-          <input type="text" class="gcr-search-input" id="gcr-search" placeholder="Search files...">
-          <button class="gcr-search-clear gcr-hidden" id="gcr-search-clear">✕</button>
+          <span class="gcr-search-icon" aria-hidden="true">🔍</span>
+          <input type="text" class="gcr-search-input" id="gcr-search" placeholder="Search files..." aria-label="Search files" tabindex="0">
+          <button class="gcr-search-clear gcr-hidden" id="gcr-search-clear" aria-label="Clear search" tabindex="0">✕</button>
         </div>
       </div>
       
       <!-- Tabs Row -->
       <div class="gcr-tabs-container">
-        <div class="gcr-tabs" id="gcr-tabs">
-          <button class="gcr-tab active" data-filter="all">
-            <span>📁 All</span>
-            <span class="gcr-tab-count">${totalItems}</span>
+        <div class="gcr-tabs" id="gcr-tabs" role="tablist" aria-label="File categories">
+          <button class="gcr-tab active" data-filter="all" role="tab" aria-selected="true" tabindex="0">
+            <span aria-hidden="true">📁</span> All
+            <span class="gcr-tab-count" aria-label="${totalItems} files">${totalItems}</span>
           </button>
-          <button class="gcr-tab" data-filter="materials">
-            <span>📖 Materials</span>
-            <span class="gcr-tab-count">${materialsCount}</span>
+          <button class="gcr-tab" data-filter="materials" role="tab" aria-selected="false" tabindex="0">
+            <span aria-hidden="true">📖</span> Materials
+            <span class="gcr-tab-count" aria-label="${materialsCount} materials">${materialsCount}</span>
           </button>
-          <button class="gcr-tab" data-filter="announcements">
-            <span>📢 Announce</span>
-            <span class="gcr-tab-count">${announcementsCount}</span>
+          <button class="gcr-tab" data-filter="announcements" role="tab" aria-selected="false" tabindex="0">
+            <span aria-hidden="true">📢</span> Announce
+            <span class="gcr-tab-count" aria-label="${announcementsCount} announcements">${announcementsCount}</span>
           </button>
-          <button class="gcr-tab" data-filter="assignments">
-            <span>📝 Assign</span>
-            <span class="gcr-tab-count">${assignmentsCount}</span>
+          <button class="gcr-tab" data-filter="assignments" role="tab" aria-selected="false" tabindex="0">
+            <span aria-hidden="true">📝</span> Assign
+            <span class="gcr-tab-count" aria-label="${assignmentsCount} assignments">${assignmentsCount}</span>
           </button>
-          <button class="gcr-tab" data-filter="links">
-            <span>🔗 Links</span>
-            <span class="gcr-tab-count">${linksCount}</span>
+          <button class="gcr-tab" data-filter="links" role="tab" aria-selected="false" tabindex="0">
+            <span aria-hidden="true">🔗</span> Links
+            <span class="gcr-tab-count" aria-label="${linksCount} links">${linksCount}</span>
           </button>
         </div>
       </div>
       
       <!-- Selection Row -->
       <div class="gcr-selection-row">
-        <div class="gcr-selection-buttons">
-          <button class="gcr-btn gcr-btn-sm gcr-btn-secondary" id="gcr-select-all">
-            <span>☑️</span> Select All
+        <div class="gcr-selection-buttons" role="group" aria-label="Selection controls">
+          <button class="gcr-btn gcr-btn-sm gcr-btn-secondary" id="gcr-select-all" aria-label="Select all visible files" tabindex="0">
+            <span aria-hidden="true">☑️</span> Select All
           </button>
-          <button class="gcr-btn gcr-btn-sm gcr-btn-secondary" id="gcr-deselect-all">
-            <span>☐</span> Deselect
+          <button class="gcr-btn gcr-btn-sm gcr-btn-secondary" id="gcr-deselect-all" aria-label="Deselect all files" tabindex="0">
+            <span aria-hidden="true">☐</span> Deselect
           </button>
         </div>
-        <div class="gcr-selection-info" id="gcr-selection-info">
+        <div class="gcr-selection-info" id="gcr-selection-info" aria-live="polite">
           <span id="gcr-selected-count">0</span> files selected
         </div>
       </div>
     </div>
     
     <!-- Content -->
-    <div class="gcr-popup-content" id="gcr-popup-content">
+    <div class="gcr-popup-content" id="gcr-popup-content" role="list" aria-label="Files list">
       ${renderEnhancedFiles(allFiles)}
     </div>
     
     <!-- Footer -->
-    <div class="gcr-popup-footer">
-      <div class="gcr-footer-info">
+    <div class="gcr-popup-footer" role="contentinfo">
+      <div class="gcr-footer-info" aria-live="polite">
         <span class="gcr-footer-selected"><strong id="gcr-footer-count">0</strong> files selected</span>
         <span class="gcr-footer-hint">Select files to download</span>
       </div>
-      <div class="gcr-footer-actions">
-        <button class="gcr-btn gcr-btn-icon gcr-btn-secondary" id="gcr-refresh-btn" title="Refresh">
+      <div class="gcr-footer-actions" role="group" aria-label="Download actions">
+        <button class="gcr-btn gcr-btn-icon gcr-btn-secondary" id="gcr-refresh-btn" title="Refresh" aria-label="Refresh course data" tabindex="0">
           🔄
         </button>
-        <button class="gcr-btn gcr-btn-primary" id="gcr-download-btn" disabled>
-          <span>📥</span> Download
+        <button class="gcr-btn gcr-btn-primary" id="gcr-download-btn" disabled aria-label="Download selected files" aria-disabled="true" tabindex="0">
+          <span aria-hidden="true">📥</span> Download
         </button>
       </div>
     </div>
     
     <!-- Progress Overlay -->
-    <div class="gcr-progress-overlay gcr-hidden" id="gcr-progress-container">
+    <div class="gcr-progress-overlay gcr-hidden" id="gcr-progress-container" role="dialog" aria-labelledby="gcr-progress-title" aria-modal="true">
       <div class="gcr-progress-content">
-        <div class="gcr-progress-title">Downloading...</div>
-        <div class="gcr-progress-text" id="gcr-progress-text">Preparing files...</div>
-        <div class="gcr-progress-bar">
+        <div class="gcr-progress-title" id="gcr-progress-title">Downloading...</div>
+        <div class="gcr-progress-text" id="gcr-progress-text" aria-live="polite">Preparing files...</div>
+        <div class="gcr-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
           <div class="gcr-progress-fill" id="gcr-progress-fill"></div>
         </div>
-        <div class="gcr-progress-buttons">
-          <button class="gcr-btn gcr-btn-secondary" id="gcr-cancel-download">Cancel</button>
-          <button class="gcr-btn gcr-btn-primary gcr-hidden" id="gcr-done-download">Done</button>
+        <div class="gcr-progress-buttons" role="group">
+          <button class="gcr-btn gcr-btn-secondary" id="gcr-cancel-download" aria-label="Cancel download" tabindex="0">Cancel</button>
+          <button class="gcr-btn gcr-btn-primary gcr-hidden" id="gcr-done-download" aria-label="Close progress dialog" tabindex="0">Done</button>
         </div>
       </div>
     </div>
@@ -1219,14 +1304,14 @@ function getAllFiles(data) {
         for (const item of items || []) {
             for (const att of item.attachments || []) {
                 const fileId = att.id || Math.random().toString(36).substr(2, 9);
-                
+
                 // Skip duplicates
                 if (seenIds.has(fileId)) {
                     console.log('[GCR Content] Skipping duplicate file:', att.title, 'id:', fileId);
                     continue;
                 }
                 seenIds.add(fileId);
-                
+
                 files.push({
                     id: fileId,
                     title: att.title || 'Untitled',
@@ -1295,19 +1380,19 @@ function getFormatGroup(type) {
 }
 
 /**
- * Renders enhanced file cards
+ * Renders enhanced file cards (UI-002: Accessibility improvements)
  */
 function renderEnhancedFiles(files) {
     if (!files || files.length === 0) {
         return `
-      <div class="gcr-empty-state">
-        <div class="gcr-empty-icon">📭</div>
+      <div class="gcr-empty-state" role="status" aria-label="No files found">
+        <div class="gcr-empty-icon" aria-hidden="true">📭</div>
         <p>No downloadable files found.</p>
       </div>
     `;
     }
 
-    let html = '<div class="gcr-files-list" id="gcr-files-grid">';
+    let html = '<div class="gcr-files-list" id="gcr-files-grid" role="list">';
 
     for (const file of files) {
         const icon = getFileIcon(file.type);
@@ -1316,14 +1401,14 @@ function renderEnhancedFiles(files) {
         const truncatedTitle = file.title.length > 35 ? file.title.substring(0, 32) + '...' : file.title;
 
         html += `
-      <label class="gcr-file-card" data-id="${escapeHtml(file.id)}" data-category="${file.category}" data-type="${file.type}" data-format="${formatGroup}" title="${escapeHtml(file.title)}">
-        <input type="checkbox" class="gcr-file-checkbox" value="${escapeHtml(file.id)}">
-        <div class="gcr-file-icon ${typeClass}">${icon}</div>
+      <label class="gcr-file-card" data-id="${escapeHtml(file.id)}" data-category="${file.category}" data-type="${file.type}" data-format="${formatGroup}" title="${escapeHtml(file.title)}" role="listitem" tabindex="0">
+        <input type="checkbox" class="gcr-file-checkbox" value="${escapeHtml(file.id)}" aria-label="Select ${escapeHtml(file.title)}">
+        <div class="gcr-file-icon ${typeClass}" aria-hidden="true">${icon}</div>
         <div class="gcr-file-info">
           <div class="gcr-file-title">${escapeHtml(truncatedTitle)}</div>
           <div class="gcr-file-meta">
             <span class="gcr-file-type">${file.type.toUpperCase()}</span>
-            <span class="gcr-meta-dot">·</span>
+            <span class="gcr-meta-dot" aria-hidden="true">·</span>
             <span class="gcr-file-category">${file.category}</span>
           </div>
         </div>
@@ -1371,9 +1456,17 @@ function getTypeClass(type) {
 }
 
 /**
- * Closes the popup
+ * Closes the popup and cleans up all event listeners (MEM-001)
  */
 function closePopup() {
+    // MEM-001: Clean up all registered popup listeners to prevent memory leaks
+    popupListenerRegistry.cleanup();
+    
+    // Clear popup-related global state
+    window.gcrCourseData = null;
+    window.gcrAllFiles = null;
+    window.gcrFilterState = null;
+    
     const overlay = document.getElementById('gcr-popup-overlay');
     if (overlay) {
         overlay.remove();
@@ -1549,11 +1642,14 @@ function getAttachmentIcon(attachment) {
 }
 
 /**
- * @deprecated LEGACY CODE - Not called. Use attachEnhancedPopupListeners() instead.
- * Attaches event listeners to popup (old version using .gcr-checkbox)
+ * @deprecated Since v1.0.4 - Use attachEnhancedPopupListeners() instead
+ * Legacy popup listener attachment using .gcr-checkbox
+ * Kept for potential rollback compatibility only
  * @param {Object} courseData - Course data
+ * @see attachEnhancedPopupListeners
  */
 function attachPopupListeners(courseData) {
+    console.warn('[GCR Content] attachPopupListeners is deprecated, use attachEnhancedPopupListeners');
     // Close button
     document.getElementById('gcr-popup-close')?.addEventListener('click', closePopup);
 
@@ -1647,7 +1743,7 @@ function attachPopupListeners(courseData) {
 }
 
 /**
- * Updates the selected count display
+ * Updates the selected count display (UI-002: Accessibility updates)
  */
 function updateSelectedCount() {
     const checked = document.querySelectorAll('.gcr-file-checkbox:checked').length;
@@ -1657,7 +1753,12 @@ function updateSelectedCount() {
 
     if (countEl) countEl.textContent = checked.toString();
     if (footerCount) footerCount.textContent = checked.toString();
-    if (downloadBtn) downloadBtn.disabled = checked === 0;
+    if (downloadBtn) {
+        downloadBtn.disabled = checked === 0;
+        // UI-002: Update ARIA disabled state
+        downloadBtn.setAttribute('aria-disabled', String(checked === 0));
+        downloadBtn.setAttribute('aria-label', `Download ${checked} selected files`);
+    }
 }
 
 /**
@@ -1670,56 +1771,100 @@ function selectAllFiles() {
 }
 
 /**
- * Attaches enhanced event listeners for premium popup
+ * Attaches enhanced event listeners for premium popup with proper cleanup (MEM-001)
+ * Uses popupListenerRegistry to track all listeners for cleanup on close
  */
 function attachEnhancedPopupListeners(courseData) {
+    const closeBtn = document.getElementById('gcr-popup-close');
+    const overlay = document.getElementById('gcr-popup-overlay');
+    const selectAllBtn = document.getElementById('gcr-select-all');
+    const deselectAllBtn = document.getElementById('gcr-deselect-all');
+    const searchInput = document.getElementById('gcr-search');
+    const searchClear = document.getElementById('gcr-search-clear');
+    const refreshBtn = document.getElementById('gcr-refresh-btn');
+    const downloadBtn = document.getElementById('gcr-download-btn');
+    const cancelBtn = document.getElementById('gcr-cancel-download');
+    const doneBtn = document.getElementById('gcr-done-download');
+    
+    // MEM-001: Use registry for all listeners
+    
     // Close button
-    document.getElementById('gcr-popup-close')?.addEventListener('click', closePopup);
+    popupListenerRegistry.add('closeBtn', closeBtn, 'click', closePopup);
 
     // Click outside to close
-    document.getElementById('gcr-popup-overlay')?.addEventListener('click', (e) => {
+    const overlayClickHandler = (e) => {
         if (e.target.id === 'gcr-popup-overlay') {
             closePopup();
         }
-    });
+    };
+    popupListenerRegistry.add('overlayClick', overlay, 'click', overlayClickHandler);
 
-    // Escape key
+    // Escape key (on document - must be tracked!)
     const escHandler = (e) => {
         if (e.key === 'Escape') {
             closePopup();
-            document.removeEventListener('keydown', escHandler);
         }
     };
-    document.addEventListener('keydown', escHandler);
+    popupListenerRegistry.add('escKey', document, 'keydown', escHandler);
+    
+    // HIGH-023 FIX: Focus trap for modal accessibility
+    const focusTrapHandler = (e) => {
+        if (e.key !== 'Tab') return;
+        
+        const popup = document.querySelector('.gcr-popup');
+        if (!popup) return;
+        
+        const focusableElements = popup.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex=\"-1\"])'
+        );
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        if (e.shiftKey) {
+            // Shift + Tab
+            if (document.activeElement === firstFocusable) {
+                e.preventDefault();
+                lastFocusable?.focus();
+            }
+        } else {
+            // Tab
+            if (document.activeElement === lastFocusable) {
+                e.preventDefault();
+                firstFocusable?.focus();
+            }
+        }
+    };
+    popupListenerRegistry.add('focusTrap', document, 'keydown', focusTrapHandler);
+    
+    // Focus the close button when popup opens (accessibility)
+    closeBtn?.focus();
 
-    // Select all VISIBLE files only (respects current filter)
-    document.getElementById('gcr-select-all')?.addEventListener('click', () => {
+    // Select all VISIBLE files only
+    const selectAllHandler = () => {
         document.querySelectorAll('.gcr-file-checkbox').forEach(cb => {
             const card = cb.closest('.gcr-file-card');
-            // Only select if card is visible (not hidden by filter)
             if (card && !card.classList.contains('gcr-hidden')) {
                 cb.checked = true;
                 card.classList.add('selected');
             }
         });
         updateSelectedCount();
-    });
+    };
+    popupListenerRegistry.add('selectAll', selectAllBtn, 'click', selectAllHandler);
 
     // Deselect all
-    document.getElementById('gcr-deselect-all')?.addEventListener('click', () => {
+    const deselectAllHandler = () => {
         document.querySelectorAll('.gcr-file-checkbox').forEach(cb => {
             cb.checked = false;
             const card = cb.closest('.gcr-file-card');
             if (card) card.classList.remove('selected');
         });
         updateSelectedCount();
-    });
+    };
+    popupListenerRegistry.add('deselectAll', deselectAllBtn, 'click', deselectAllHandler);
 
     // Search with clear button
-    const searchInput = document.getElementById('gcr-search');
-    const searchClear = document.getElementById('gcr-search-clear');
-
-    searchInput?.addEventListener('input', (e) => {
+    const searchHandler = (e) => {
         const query = e.target.value.toLowerCase().trim();
 
         // Show/hide clear button
@@ -1728,22 +1873,28 @@ function attachEnhancedPopupListeners(courseData) {
         }
 
         filterFiles();
-    });
+    };
+    popupListenerRegistry.add('searchInput', searchInput, 'input', searchHandler);
 
-    searchClear?.addEventListener('click', () => {
+    const searchClearHandler = () => {
         if (searchInput) {
             searchInput.value = '';
             searchClear.classList.add('gcr-hidden');
             filterFiles();
         }
-    });
+    };
+    popupListenerRegistry.add('searchClear', searchClear, 'click', searchClearHandler);
 
-    // Tab clicks (category filter)
-    document.querySelectorAll('.gcr-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Update active state
-            document.querySelectorAll('.gcr-tab').forEach(t => t.classList.remove('active'));
+    // Tab clicks (category filter) - MEM-001: track each tab listener
+    document.querySelectorAll('.gcr-tab').forEach((tab, index) => {
+        const tabHandler = () => {
+            // Update active state and ARIA (UI-002)
+            document.querySelectorAll('.gcr-tab').forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
             tab.classList.add('active');
+            tab.setAttribute('aria-selected', 'true');
 
             // CLEAR all selections when switching tabs (prevent accumulation)
             document.querySelectorAll('.gcr-file-checkbox').forEach(cb => {
@@ -1757,44 +1908,50 @@ function attachEnhancedPopupListeners(courseData) {
             window.gcrFilterState.category = tab.dataset.filter;
             filterFiles();
             updateSelectedCount();
-        });
+        };
+        popupListenerRegistry.add(`tab-${index}`, tab, 'click', tabHandler);
     });
 
-    // File card checkbox changes - also toggle .selected class for styling
-    document.querySelectorAll('.gcr-file-checkbox').forEach(cb => {
-        cb.addEventListener('change', () => {
+    // File card checkbox changes - MEM-001: track each checkbox listener
+    document.querySelectorAll('.gcr-file-checkbox').forEach((cb, index) => {
+        const checkboxHandler = () => {
             const card = cb.closest('.gcr-file-card');
             if (card) {
                 card.classList.toggle('selected', cb.checked);
             }
             updateSelectedCount();
-        });
+        };
+        popupListenerRegistry.add(`checkbox-${index}`, cb, 'change', checkboxHandler);
     });
 
     // Refresh button
-    document.getElementById('gcr-refresh-btn')?.addEventListener('click', async () => {
+    const refreshHandler = async () => {
         closePopup();
         const courseId = getCurrentCourseId();
         if (courseId) {
             await fetchCourseData(courseId);
         }
-    });
+    };
+    popupListenerRegistry.add('refreshBtn', refreshBtn, 'click', refreshHandler);
 
     // Download button
-    document.getElementById('gcr-download-btn')?.addEventListener('click', () => {
+    const downloadHandler = () => {
         startEnhancedDownload();
-    });
+    };
+    popupListenerRegistry.add('downloadBtn', downloadBtn, 'click', downloadHandler);
 
     // Cancel download - stop download and close overlay
-    document.getElementById('gcr-cancel-download')?.addEventListener('click', () => {
+    const cancelHandler = () => {
         cancelDownload();
         closeProgressOverlay();
-    });
+    };
+    popupListenerRegistry.add('cancelBtn', cancelBtn, 'click', cancelHandler);
 
     // Done button - closes progress overlay and returns to file list
-    document.getElementById('gcr-done-download')?.addEventListener('click', () => {
+    const doneHandler = () => {
         closeProgressOverlay();
-    });
+    };
+    popupListenerRegistry.add('doneBtn', doneBtn, 'click', doneHandler);
 }
 
 /**
@@ -1821,7 +1978,7 @@ function filterFiles() {
         // Check category - 'links' is a special case that checks type instead
         const isLink = cardType === 'link' || cardType === 'youtube' || cardType === 'form';
         let inCategory;
-        
+
         if (state.category === 'all') {
             inCategory = true;
         } else if (state.category === 'links') {
@@ -1962,15 +2119,11 @@ async function startEnhancedDownload() {
         console.log('[GCR Content] Download response:', response);
 
         if (response.success) {
-            // Monitor progress and get final state
-            const finalProgress = await monitorDownloadProgress(response.total || selectedIds.length);
-            // Use final progress for notification (not stale initial response)
-            const completed = finalProgress?.completed || 0;
-            const total = finalProgress?.total || response.total || selectedIds.length;
-            const failed = finalProgress?.failed || 0;
+            // Monitor progress and get final stats (not the initial response!)
+            const finalStats = await monitorDownloadProgress(response.total || selectedIds.length);
             showNotification(
-                `Download complete! ${completed}/${total} files downloaded.`,
-                failed > 0 ? 'warning' : 'success'
+                `Download complete! ${finalStats.completed}/${finalStats.total} files downloaded.`,
+                finalStats.failed > 0 ? 'warning' : 'success'
             );
             // Don't close overlay here - Done button will close it
         } else {
@@ -1988,10 +2141,13 @@ async function startEnhancedDownload() {
 }
 
 /**
- * @deprecated LEGACY CODE - Not called. Use startEnhancedDownload() instead.
- * Starts the download process (old version using .gcr-checkbox)
+ * @deprecated Since v1.0.4 - Use startEnhancedDownload() instead
+ * Legacy download process using .gcr-checkbox selectors
+ * Kept for potential rollback compatibility only
+ * @see startEnhancedDownload
  */
 async function startDownload() {
+    console.warn('[GCR Content] startDownload is deprecated, use startEnhancedDownload');
     const selected = Array.from(document.querySelectorAll('.gcr-checkbox:checked'))
         .map(cb => cb.value);
 
@@ -2037,6 +2193,8 @@ async function startDownload() {
 
 /**
  * Monitors download progress with timeout protection
+ * @param {number} totalFiles - Total number of files to download
+ * @returns {Object} Final stats: { completed, failed, total }
  */
 async function monitorDownloadProgress(totalFiles) {
     const MAX_MONITOR_TIME = 30 * 60 * 1000;  // 30 minutes max for large downloads
@@ -2049,19 +2207,14 @@ async function monitorDownloadProgress(totalFiles) {
     const doneBtn = document.getElementById('gcr-done-download');
 
     let lastCompleted = 0;
+    let finalStats = { completed: 0, failed: 0, total: totalFiles };
 
     while (true) {
         // Timeout protection
         if (Date.now() - startTime > MAX_MONITOR_TIME) {
             if (progressText) progressText.textContent = 'Download timed out';
             showDoneButton(cancelBtn, doneBtn);
-            // Return partial progress on timeout
-            return {
-                completed: lastCompleted,
-                total: totalFiles,
-                failed: 0,
-                timedOut: true
-            };
+            return finalStats;  // Return whatever we have
         }
 
         try {
@@ -2075,18 +2228,25 @@ async function monitorDownloadProgress(totalFiles) {
                 await new Promise(r => setTimeout(r, POLL_INTERVAL));
                 continue;
             }
-            
+
+            // Always update finalStats with latest data
+            finalStats = {
+                completed: response.completed || 0,
+                failed: response.failed || 0,
+                total: response.total || totalFiles
+            };
+
             if (!response.active) {
                 // Download complete - show Done button
-                if (progressFill) progressFill.style.width = '100%';
-                if (progressText) progressText.textContent = `Download complete! ${response.completed || 0}/${response.total || totalFiles} files`;
+                if (progressFill) {
+                    progressFill.style.width = '100%';
+                    // UI-002: Update ARIA progress
+                    const progressBar = progressFill.parentElement;
+                    if (progressBar) progressBar.setAttribute('aria-valuenow', '100');
+                }
+                if (progressText) progressText.textContent = `Download complete! ${finalStats.completed}/${finalStats.total} files`;
                 showDoneButton(cancelBtn, doneBtn);
-                // Return final progress state for notification
-                return {
-                    completed: response.completed || 0,
-                    total: response.total || totalFiles,
-                    failed: response.failed || 0
-                };
+                return finalStats;  // Return final stats
             }
 
             // Update progress UI
@@ -2094,13 +2254,16 @@ async function monitorDownloadProgress(totalFiles) {
             const total = response.total || totalFiles || 1;
             const percent = Math.round((completed / total) * 100);
             const currentFile = response.currentFile || '';
-            
+
             // Force UI update
             if (progressFill) {
                 progressFill.style.width = `${percent}%`;
                 progressFill.style.transition = 'width 0.3s ease';
+                // UI-002: Update ARIA progress value
+                const progressBar = progressFill.parentElement;
+                if (progressBar) progressBar.setAttribute('aria-valuenow', String(percent));
             }
-            
+
             // Show current file being downloaded
             if (progressText) {
                 const truncatedFile = currentFile.length > 30 ? currentFile.substring(0, 27) + '...' : currentFile;
@@ -2110,7 +2273,7 @@ async function monitorDownloadProgress(totalFiles) {
                     progressText.textContent = `Downloading ${completed}/${total} files... (${percent}%)`;
                 }
             }
-            
+
             // Log progress for debugging
             if (completed !== lastCompleted) {
                 console.log(`[GCR Content] Progress: ${completed}/${total} (${percent}%) - ${currentFile}`);
@@ -2204,25 +2367,54 @@ function showNotification(message, type = 'info') {
 /**
  * Decodes a base64-encoded course ID to numeric format
  * Google Classroom URLs use base64-encoded IDs, but the API needs numeric IDs
+ * HIGH-019 FIX: Added base64 format validation before attempting decode
  * @param {string} encodedId - Base64 encoded course ID from URL
  * @returns {string} Numeric course ID for API
  */
 function decodeCourseId(encodedId) {
+    // VAL-003: Validate input before processing
+    if (!encodedId || typeof encodedId !== 'string') {
+        console.warn('[GCR Content] Invalid course ID input');
+        return '';
+    }
+    
+    // Sanitize: remove any potentially dangerous characters
+    const sanitizedId = encodedId.replace(/[^a-zA-Z0-9_=-]/g, '');
+    
+    // Check for maximum reasonable length (course IDs shouldn't be huge)
+    if (sanitizedId.length > 100) {
+        console.warn('[GCR Content] Course ID too long, truncating');
+        return '';
+    }
+    
+    // HIGH-019 FIX: Validate base64 format before attempting decode
+    // Valid base64 only contains A-Za-z0-9+/= (but URLs use _ and - instead of + and /)
+    const base64Regex = /^[A-Za-z0-9_=-]+$/;
+    if (!base64Regex.test(sanitizedId)) {
+        console.log('[GCR Content] Course ID not valid base64 format, using as-is');
+        return sanitizedId;
+    }
+    
     try {
+        // HIGH-019 FIX: Replace URL-safe base64 chars before decoding
+        const standardBase64 = sanitizedId.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        const paddedBase64 = standardBase64 + '=='.slice(0, (4 - standardBase64.length % 4) % 4);
+        
         // Try to decode as base64
-        const decoded = atob(encodedId);
+        const decoded = atob(paddedBase64);
         // Check if result is a valid number
         if (/^\d+$/.test(decoded)) {
-            console.log('[GCR Content] Decoded course ID:', encodedId, '->', decoded);
+            console.log('[GCR Content] Decoded course ID:', sanitizedId, '->', decoded);
             return decoded;
         }
     } catch (e) {
-        // Not base64, might already be numeric
-        console.log('[GCR Content] Course ID not base64, using as-is:', encodedId);
+        // Not valid base64, might already be numeric
+        console.log('[GCR Content] Course ID decode failed, using as-is:', sanitizedId, e.message);
     }
 
-    // If already numeric or decoding failed, return as-is
-    return encodedId;
+    // If already numeric or decoding failed, return sanitized version
+    return sanitizedId;
 }
 
 /**
@@ -2333,21 +2525,48 @@ async function fetchCourseData(courseId) {
 // ============================================================================
 
 /**
- * Sends a message to the background script
+ * Sends a message to the background script with robust error handling
+ * Includes timeout protection and graceful error recovery
  * @param {Object} message - Message to send
+ * @param {number} timeoutMs - Timeout in milliseconds (default: 30s)
  * @returns {Promise<Object>} Response
  */
-function sendMessage(message) {
+function sendMessage(message, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
+        // Timeout protection for long operations
+        const timeoutId = setTimeout(() => {
+            reject(new Error('Message timeout - background script not responding'));
+        }, timeoutMs);
+        
         try {
+            // Check if extension context is valid before sending
+            if (!chrome.runtime?.id) {
+                clearTimeout(timeoutId);
+                reject(new Error('Extension context invalidated. Please refresh the page.'));
+                return;
+            }
+            
             chrome.runtime.sendMessage(message, (response) => {
+                clearTimeout(timeoutId);
+                
                 if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve(response || { success: false, error: 'No response' });
+                    const errorMsg = chrome.runtime.lastError.message || 'Unknown error';
+                    
+                    // Provide user-friendly error messages
+                    if (errorMsg.includes('Extension context invalidated')) {
+                        reject(new Error('Extension was updated. Please refresh this page.'));
+                    } else if (errorMsg.includes('Could not establish connection')) {
+                        reject(new Error('Extension not ready. Please wait and try again.'));
+                    } else {
+                        reject(new Error(errorMsg));
+                    }
+                    return;
                 }
+                
+                resolve(response || { success: false, error: 'No response from background' });
             });
         } catch (error) {
+            clearTimeout(timeoutId);
             reject(error);
         }
     });
@@ -2358,12 +2577,27 @@ function sendMessage(message) {
 // ============================================================================
 
 /**
- * Escapes HTML special characters
+ * Escapes HTML special characters to prevent XSS
+ * Uses DOM-based escaping which is more secure than regex
  * @param {string} str - String to escape
- * @returns {string} Escaped string
+ * @returns {string} Escaped string safe for innerHTML
  */
 function escapeHtml(str) {
     if (!str) return '';
+    if (typeof str !== 'string') {
+        // Convert to string safely
+        try {
+            str = String(str);
+        } catch (e) {
+            return '';
+        }
+    }
+    
+    // Limit length to prevent DoS
+    if (str.length > 10000) {
+        str = str.substring(0, 10000) + '...';
+    }
+    
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
@@ -2396,14 +2630,48 @@ function setupNavigationDetection() {
     // Method 2: popstate (back/forward)
     window.addEventListener('popstate', handleUrlChange);
 
-    // Method 3: MutationObserver for SPA
-    const observer = new MutationObserver(handleUrlChange);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Method 3: MutationObserver for SPA (stored globally for cleanup)
+    // HIGH-013 FIX: Throttle MutationObserver callbacks to prevent performance issues
+    let mutationThrottleTimeout = null;
+    const throttledUrlChange = () => {
+        if (mutationThrottleTimeout) return;
+        mutationThrottleTimeout = setTimeout(() => {
+            mutationThrottleTimeout = null;
+            handleUrlChange();
+        }, MUTATION_THROTTLE_MS);
+    };
+    
+    navigationObserver = new MutationObserver(throttledUrlChange);
+    // HIGH-013 FIX: Only observe specific navigation-related elements when possible
+    const mainContent = document.querySelector('main, [role="main"], .main-content') || document.body;
+    navigationObserver.observe(mainContent, { childList: true, subtree: true });
 
-    // Method 4: Polling fallback
-    setInterval(handleUrlChange, 1000);
+    // Method 4: Polling fallback (stored globally for cleanup)
+    // HIGH-014 FIX: Increased from 1s to 3s to reduce CPU usage
+    pollingInterval = setInterval(handleUrlChange, POLLING_INTERVAL_MS);
 
     console.log('[GCR Content] Navigation detection set up');
+}
+
+/**
+ * Cleans up navigation detection resources to prevent memory leaks
+ * Called on page unload/navigation away
+ */
+function cleanupNavigationDetection() {
+    if (navigationObserver) {
+        navigationObserver.disconnect();
+        navigationObserver = null;
+        console.log('[GCR Content] MutationObserver disconnected');
+    }
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        console.log('[GCR Content] Polling interval cleared');
+    }
+    if (detectionTimeout) {
+        clearTimeout(detectionTimeout);
+        detectionTimeout = null;
+    }
 }
 
 /**
@@ -2421,7 +2689,10 @@ function setupMessageListener() {
                     if (response.success) {
                         updateBadge(response.count);
                     }
-                }).catch(() => { });
+                }).catch((e) => {
+                    // Background may not be ready - non-fatal for sync updates
+                    console.debug('[GCR Content] Sync badge update failed:', e.message);
+                });
             }
         }
         return true;
@@ -2487,6 +2758,24 @@ async function init() {
 
     console.log('[GCR Content] Initialized');
 }
+
+// ============================================================================
+// CLEANUP & LIFECYCLE
+// ============================================================================
+
+/**
+ * Register cleanup handlers to prevent memory leaks
+ * These fire when user navigates away or closes the tab
+ */
+window.addEventListener('beforeunload', cleanupNavigationDetection);
+window.addEventListener('pagehide', cleanupNavigationDetection);
+
+// Also cleanup if the extension context is invalidated (extension reload)
+window.addEventListener('error', (event) => {
+    if (event.message?.includes('Extension context invalidated')) {
+        cleanupNavigationDetection();
+    }
+});
 
 // Run initialization when DOM is ready
 if (document.readyState === 'loading') {

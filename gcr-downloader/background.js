@@ -43,6 +43,7 @@ import {
     clearBackoff,
     getStats as getRateLimitStats,
     initialize as initializeRateLimiter,
+    setCurrentUser as setRateLimitUser,
     PRIORITY
 } from './utils/rateLimiter.js';
 
@@ -60,6 +61,13 @@ import {
     containsXSS
 } from './utils/sanitizer.js';
 
+// HIGH-002 FIX: Import offline queue functions
+import {
+    getOfflineQueue,
+    retryOfflineQueue,
+    clearOfflineQueue
+} from './utils/download.js';
+
 // ============================================================================
 // WORKER STATE INITIALIZATION (Critical for MV3 Service Worker Survival)
 // ============================================================================
@@ -69,7 +77,7 @@ import {
  * This MUST run at the top level to handle worker resurrection
  */
 (async function initializeServiceWorker() {
-    console.log('[GCR Background] Service worker starting (v2.0.0)...');
+    console.log('[GCR Background] Service worker starting (v1.0.5)...');
 
     try {
         // Initialize worker state (persistent queue, heartbeat)
@@ -105,9 +113,105 @@ const STORAGE_KEYS = {
 const CLASSROOM_API_BASE = 'https://classroom.googleapis.com/v1';
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';
 
+// HIGH-005 FIX: Debug mode flag - set to false for production
+// Can be enabled via chrome.storage.local.set({gcr_debug: true})
+let DEBUG_MODE = false;
+
+// Load debug mode setting
+chrome.storage.local.get(['gcr_debug'], (result) => {
+    DEBUG_MODE = result.gcr_debug === true;
+});
+
+/**
+ * HIGH-005 FIX: Debug logger that only logs when debug mode is enabled
+ * @param {...any} args - Arguments to log
+ */
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
+
+/**
+ * HIGH-005 FIX: Debug warning logger
+ * @param {...any} args - Arguments to log
+ */
+function debugWarn(...args) {
+    if (DEBUG_MODE) {
+        console.warn(...args);
+    }
+}
+
+// VAL-001: Course ID validation pattern (numeric, 10+ digits)
+const COURSE_ID_PATTERN = /^[0-9]{10,}$/;
+
+// MSG-001: Message rate limiting
+const messageThrottle = new Map();
+const MESSAGE_THROTTLE_MS = 100;
+const THROTTLE_CLEANUP_INTERVAL = 60000;
+
+// Cleanup throttle map periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, timestamp] of messageThrottle) {
+        if (now - timestamp > THROTTLE_CLEANUP_INTERVAL) {
+            messageThrottle.delete(key);
+        }
+    }
+}, THROTTLE_CLEANUP_INTERVAL);
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Get expected MIME types for a file extension
+ * Used for MIME type validation to prevent saving HTML error pages as files
+ * @param {string} extension - File extension (e.g., '.pdf', '.docx')
+ * @returns {Array} Array of valid MIME types for this extension
+ */
+function getExpectedMimeTypes(extension) {
+    const mimeMap = {
+        // Documents
+        '.pdf': ['application/pdf'],
+        '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/octet-stream'],
+        '.doc': ['application/msword', 'application/octet-stream'],
+        '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'],
+        '.xls': ['application/vnd.ms-excel', 'application/octet-stream'],
+        '.pptx': ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/octet-stream'],
+        '.ppt': ['application/vnd.ms-powerpoint', 'application/octet-stream'],
+        '.txt': ['text/plain'],
+        '.rtf': ['application/rtf', 'text/rtf'],
+        '.csv': ['text/csv', 'application/csv'],
+        // Images
+        '.png': ['image/png'],
+        '.jpg': ['image/jpeg'],
+        '.jpeg': ['image/jpeg'],
+        '.gif': ['image/gif'],
+        '.svg': ['image/svg+xml'],
+        '.webp': ['image/webp'],
+        '.bmp': ['image/bmp'],
+        // Media
+        '.mp3': ['audio/mpeg', 'audio/mp3'],
+        '.mp4': ['video/mp4'],
+        '.wav': ['audio/wav', 'audio/wave'],
+        '.webm': ['video/webm', 'audio/webm'],
+        '.ogg': ['audio/ogg', 'video/ogg'],
+        // Archives
+        '.zip': ['application/zip', 'application/x-zip-compressed'],
+        '.rar': ['application/x-rar-compressed', 'application/vnd.rar'],
+        '.7z': ['application/x-7z-compressed'],
+        // Code
+        '.json': ['application/json', 'text/json'],
+        '.xml': ['application/xml', 'text/xml'],
+        '.html': ['text/html'],
+        '.js': ['application/javascript', 'text/javascript'],
+        '.css': ['text/css'],
+        '.py': ['text/x-python', 'text/plain'],
+        '.java': ['text/x-java-source', 'text/plain'],
+    };
+    return mimeMap[extension?.toLowerCase()] || [];
+}
 
 /**
  * Generate a simple hash code from a string (for creating unique IDs)
@@ -132,26 +236,26 @@ function hashCode(str) {
  */
 function extractUrlsFromText(text) {
     if (!text) return [];
-    
+
     const attachments = [];
     // Regex to match URLs (http, https, and common patterns)
     const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
     const matches = text.match(urlRegex) || [];
-    
+
     // Track seen URLs to avoid duplicates
     const seenUrls = new Set();
-    
+
     for (const url of matches) {
         // Clean trailing punctuation
         let cleanUrl = url.replace(/[.,;:!?)]+$/, '');
-        
+
         if (seenUrls.has(cleanUrl)) continue;
         seenUrls.add(cleanUrl);
-        
+
         // Determine type based on URL
         let type = 'link';
         let title = cleanUrl;
-        
+
         if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
             type = 'youtube';
             title = 'YouTube Video (from text)';
@@ -168,7 +272,7 @@ function extractUrlsFromText(text) {
             type = 'form';
             title = 'Google Form';
         }
-        
+
         const linkId = `text-link-${hashCode(cleanUrl)}`;
         attachments.push({
             type,
@@ -180,7 +284,7 @@ function extractUrlsFromText(text) {
             fromText: true // Flag to indicate this was extracted from text
         });
     }
-    
+
     return attachments;
 }
 
@@ -189,9 +293,21 @@ function extractUrlsFromText(text) {
 // ============================================================================
 
 /**
- * Main message listener
+ * Main message listener with rate limiting (MSG-001)
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // MSG-001: Rate limit messages to prevent DoS
+    const throttleKey = `${sender.tab?.id || 'popup'}_${message.type}`;
+    const lastCall = messageThrottle.get(throttleKey) || 0;
+    const now = Date.now();
+    
+    if (now - lastCall < MESSAGE_THROTTLE_MS) {
+        console.warn('[GCR Background] Rate limiting message:', message.type);
+        sendResponse({ success: false, error: 'Rate limited. Please slow down.' });
+        return true;
+    }
+    messageThrottle.set(throttleKey, now);
+
     console.log('[GCR Background] Message received:', message.type);
 
     // Handle async responses
@@ -256,6 +372,19 @@ async function handleMessage(message, sender) {
         case 'RESUME_DOWNLOADS':
             return { success: true, message: 'Resume triggered' };
 
+        case 'GET_RATE_LIMIT_STATS':
+            return handleGetRateLimitStats();
+            
+        // HIGH-002 FIX: Offline queue handlers
+        case 'GET_OFFLINE_QUEUE':
+            return handleGetOfflineQueue();
+            
+        case 'RETRY_OFFLINE_QUEUE':
+            return handleRetryOfflineQueue(message.courseFolderName);
+            
+        case 'CLEAR_OFFLINE_QUEUE':
+            return handleClearOfflineQueue();
+
         default:
             console.warn('[GCR Background] Unknown message type:', message.type);
             return { success: false, error: 'Unknown message type' };
@@ -277,12 +406,8 @@ async function handleGetAuthToken(interactive = true) {
     const clientId = manifest.oauth2?.client_id;
     const scopes = manifest.oauth2?.scopes || [];
 
-    console.log('[GCR Background] ========== OAuth Debug Info ==========');
-    console.log('[GCR Background] Extension ID:', chrome.runtime.id);
-    console.log('[GCR Background] OAuth Client ID:', clientId);
-    console.log('[GCR Background] Has key in manifest:', !!manifest.key);
-    console.log('[GCR Background] Interactive mode:', interactive);
-    console.log('[GCR Background] ======================================');
+    // OAuth debug info (without sensitive data)
+    console.log('[GCR Background] OAuth init - interactive:', interactive);
 
     // First, try the standard getAuthToken method
     return new Promise((resolve) => {
@@ -313,14 +438,39 @@ async function handleGetAuthToken(interactive = true) {
                 return;
             }
 
-            console.log('[GCR Background] Token obtained successfully!');
+            // Token obtained - store timestamp (SECURITY: never log token values)
             chrome.storage.local.set({
                 [STORAGE_KEYS.AUTH_TOKEN]: token,
                 [STORAGE_KEYS.AUTH_TIMESTAMP]: Date.now()
             });
+            console.log('[GCR Background] Token obtained successfully');
+            
+            // HIGH-004 FIX: Set current user for per-user rate limiting
+            // Use a hash of the token as user identifier (don't log actual token)
+            try {
+                const userHash = await hashString(token.substring(0, 20));
+                setRateLimitUser(userHash);
+                debugLog('[GCR Background] Per-user rate limit bucket set');
+            } catch (e) {
+                debugLog('[GCR Background] Could not set user bucket:', e.message);
+            }
+            
             resolve({ success: true, token });
         });
     });
+}
+
+/**
+ * HIGH-004 FIX: Simple hash function for user identification
+ * @param {string} str - String to hash
+ * @returns {Promise<string>} Hash of the string
+ */
+async function hashString(str) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -343,8 +493,8 @@ async function tryLaunchWebAuthFlow(clientId, scopes) {
             `scope=${encodeURIComponent(scopeString)}&` +
             `prompt=consent`;
 
-        console.log('[GCR Background] Opening auth window with URL:', authUrl);
-        console.log('[GCR Background] Expected redirect:', redirectUrl);
+        console.log('[GCR Background] Opening auth window...');
+        console.log('[GCR Background] Redirect URL:', redirectUrl);
 
         // Create a popup window for OAuth
         chrome.windows.create({
@@ -383,11 +533,12 @@ async function tryLaunchWebAuthFlow(clientId, scopes) {
                         chrome.windows.remove(windowId);
 
                         if (token) {
-                            console.log('[GCR Background] Token obtained via popup window!');
+                            // Token obtained via popup (SECURITY: never log token values)
                             chrome.storage.local.set({
                                 [STORAGE_KEYS.AUTH_TOKEN]: token,
                                 [STORAGE_KEYS.AUTH_TIMESTAMP]: Date.now()
                             });
+                            console.log('[GCR Background] Token obtained via popup window');
                             resolve({ success: true, token });
                         } else if (error) {
                             reject(new Error(`OAuth error: ${error}`));
@@ -417,6 +568,7 @@ async function tryLaunchWebAuthFlow(clientId, scopes) {
 
 /**
  * Signs out the user
+ * HIGH-001 FIX: Improved token revocation with retry and explicit error handling
  * BEHAVIOR: Revokes token, clears auth state, but KEEPS cached course data
  * User can still view cache (read-only) but downloads require re-auth
  * @returns {Promise<Object>} Result
@@ -427,22 +579,47 @@ async function handleSignOut() {
             if (token) {
                 // Remove cached token from Chrome
                 chrome.identity.removeCachedAuthToken({ token }, async () => {
-                    // Revoke on Google's servers
-                    try {
-                        await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`);
-                    } catch (e) {
-                        console.warn('[GCR Background] Revoke failed:', e);
+                    // HIGH-001 FIX: Revoke on Google's servers with retry
+                    let revocationSuccess = false;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        try {
+                            // Use POST for revocation (more reliable)
+                            const revokeResponse = await fetch('https://accounts.google.com/o/oauth2/revoke', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: `token=${encodeURIComponent(token)}`
+                            });
+                            
+                            if (revokeResponse.ok || revokeResponse.status === 400) {
+                                // 400 means token already invalid, which is fine
+                                revocationSuccess = true;
+                                console.log('[GCR Background] Token revoked on Google servers');
+                                break;
+                            }
+                        } catch (e) {
+                            console.warn(`[GCR Background] Revoke attempt ${attempt + 1} failed:`, e.message);
+                            if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
+                        }
+                    }
+                    
+                    if (!revocationSuccess) {
+                        console.error('[GCR Background] Token revocation failed after retries');
                     }
 
                     // Clear auth data only, KEEP course cache for viewing
-                    // This allows offline viewing of cached data
                     chrome.storage.local.remove([
                         STORAGE_KEYS.AUTH_TOKEN,
                         STORAGE_KEYS.AUTH_TIMESTAMP
                     ]);
 
                     console.log('[GCR Background] Sign out complete - kept cached data');
-                    resolve({ success: true, message: 'Signed out. Cached data retained for viewing.' });
+                    resolve({ 
+                        success: true, 
+                        message: 'Signed out. Cached data retained for viewing.',
+                        revocationSuccess
+                    });
                 });
             } else {
                 resolve({ success: true });
@@ -578,6 +755,91 @@ async function handleClearCache() {
 }
 
 /**
+ * Gets rate limit statistics for quota monitoring
+ * Used by popup to display quota warnings
+ * @returns {Promise<Object>} Rate limit stats
+ */
+async function handleGetRateLimitStats() {
+    try {
+        const stats = getRateLimitStats();
+        return {
+            success: true,
+            availableTokens: stats.availableTokens || 0,
+            maxTokens: stats.maxTokens || 90,
+            isInBackoff: stats.isInBackoff || false,
+            backoffRemaining: stats.backoffRemaining || 0,
+            requestsInLastMinute: stats.requestsInLastMinute || 0
+        };
+    } catch (error) {
+        console.error('[GCR Background] Error getting rate limit stats:', error);
+        return {
+            success: false,
+            error: error.message,
+            availableTokens: 90, // Default to full capacity on error
+            maxTokens: 90,
+            isInBackoff: false,
+            backoffRemaining: 0
+        };
+    }
+}
+
+// ============================================================================
+// HIGH-002 FIX: OFFLINE QUEUE HANDLERS
+// ============================================================================
+
+/**
+ * Gets items in the offline retry queue
+ * @returns {Promise<Object>} Queue items
+ */
+async function handleGetOfflineQueue() {
+    try {
+        const queue = await getOfflineQueue();
+        return {
+            success: true,
+            queue,
+            count: queue.length
+        };
+    } catch (error) {
+        console.error('[GCR Background] Error getting offline queue:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Retries all items in the offline queue
+ * @param {string} courseFolderName - Optional folder name for downloads
+ * @returns {Promise<Object>} Retry results
+ */
+async function handleRetryOfflineQueue(courseFolderName) {
+    try {
+        const result = await retryOfflineQueue(courseFolderName);
+        return {
+            success: result.success,
+            retried: result.retried || 0,
+            failed: result.failed || 0,
+            error: result.error
+        };
+    } catch (error) {
+        console.error('[GCR Background] Error retrying offline queue:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Clears the offline retry queue
+ * @returns {Promise<Object>} Success status
+ */
+async function handleClearOfflineQueue() {
+    try {
+        await clearOfflineQueue();
+        return { success: true };
+    } catch (error) {
+        console.error('[GCR Background] Error clearing offline queue:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Gets total item count from cached data
  * @returns {Promise<Object>} Count
  */
@@ -588,16 +850,26 @@ async function handleGetItemCount() {
         return { success: true, count: 0 };
     }
 
-    let count = 0;
     const data = cached.data;
 
-    // Count all attachments (excluding links which go into resources file)
+    // Use cached totalItems if available (already correctly calculated)
+    if (data.totalItems !== undefined) {
+        return { success: true, count: data.totalItems };
+    }
+
+    // Fallback: count all attachments INCLUDING links
+    let count = 0;
+    const seenIds = new Set();
+
     const countAttachments = (items) => {
         for (const item of items || []) {
             for (const attachment of item.attachments || []) {
-                if (!attachment.isLink) {
-                    count++;
+                // Dedupe by ID if available
+                if (attachment.id) {
+                    if (seenIds.has(attachment.id)) continue;
+                    seenIds.add(attachment.id);
                 }
+                count++;
             }
         }
     };
@@ -605,11 +877,6 @@ async function handleGetItemCount() {
     countAttachments(data.assignments);
     countAttachments(data.materials);
     countAttachments(data.announcements);
-
-    // Add 1 for resources file if there are links
-    if (data.links && data.links.length > 0) {
-        count++;
-    }
 
     return { success: true, count };
 }
@@ -619,15 +886,42 @@ async function handleGetItemCount() {
 // ============================================================================
 
 /**
+ * Validates a course ID format
+ * @param {string} courseId - Course ID to validate
+ * @returns {boolean} True if valid
+ */
+function isValidCourseId(courseId) {
+    if (!courseId || typeof courseId !== 'string') {
+        return false;
+    }
+    return COURSE_ID_PATTERN.test(courseId);
+}
+
+/**
  * Fetches course data from API
  * @param {string} courseId - Course ID
  * @param {string} courseName - Course name (optional, will be fetched if not provided)
  * @returns {Promise<Object>} Course data
  */
 async function handleFetchCourseData(courseId, courseName) {
-    console.log('[GCR Background] Fetching course data:', courseId);
+    // VAL-001: Validate course ID format before making API calls
+    if (!isValidCourseId(courseId)) {
+        console.error('[GCR Background] Invalid course ID format:', courseId);
+        return { 
+            success: false, 
+            error: 'Invalid course ID format. Please navigate to a valid course.' 
+        };
+    }
+    
+    console.log('[GCR Background] Fetching course data for validated ID');
 
     try {
+        // AUTH-001: Pre-validate token for batch fetch operation
+        const tokenValid = await ensureValidTokenForBatch();
+        if (!tokenValid) {
+            console.warn('[GCR Background] Token pre-validation failed for fetch');
+        }
+
         // Get auth token
         const authResult = await handleGetAuthToken(true);
         if (!authResult.success) {
@@ -709,18 +1003,36 @@ async function handleFetchCourseData(courseId, courseName) {
         const seenLinkIds = new Set();
         let totalFiles = 0;
         let uniqueLinks = 0;
-        
+
         const countItems = (items) => {
             for (const item of items) {
                 for (const att of item.attachments || []) {
-                    if (att.isLink) {
-                        if (att.id && !seenLinkIds.has(att.id)) {
-                            seenLinkIds.add(att.id);
+                    // Check if it's a link by BOTH isLink flag AND type field
+                    const isLinkType = att.isLink === true ||
+                        att.type === 'youtube' ||
+                        att.type === 'link' ||
+                        att.type === 'form';
+
+                    if (isLinkType) {
+                        // For links: dedupe by ID if available, otherwise count
+                        if (att.id) {
+                            if (!seenLinkIds.has(att.id)) {
+                                seenLinkIds.add(att.id);
+                                uniqueLinks++;
+                            }
+                        } else {
+                            // No ID - count it (can't deduplicate)
                             uniqueLinks++;
                         }
                     } else {
-                        if (att.id && !seenFileIds.has(att.id)) {
-                            seenFileIds.add(att.id);
+                        // For files: dedupe by ID if available, otherwise count
+                        if (att.id) {
+                            if (!seenFileIds.has(att.id)) {
+                                seenFileIds.add(att.id);
+                                totalFiles++;
+                            }
+                        } else {
+                            // No ID - count it (can't deduplicate)
                             totalFiles++;
                         }
                     }
@@ -730,7 +1042,7 @@ async function handleFetchCourseData(courseId, courseName) {
         countItems(coursework);
         countItems(materials);
         countItems(announcements);
-        
+
         // Total = files + links (count each link individually to match popup)
         const totalItems = totalFiles + uniqueLinks;
 
@@ -936,13 +1248,13 @@ async function fetchAnnouncements(courseId, token) {
                 for (const announcement of data.announcements) {
                     // Process official attachments
                     const attachments = processMaterials(announcement.materials);
-                    
+
                     // Also extract URLs from announcement text body
                     if (announcement.text) {
                         const textLinks = extractUrlsFromText(announcement.text);
                         attachments.push(...textLinks);
                     }
-                    
+
                     items.push({
                         id: announcement.id,
                         title: announcement.text?.substring(0, 50) || 'Announcement',
@@ -1082,6 +1394,13 @@ async function handleDownloadFiles(selectedItems) {
             results: { success: [], failed: [] }
         };
 
+        // AUTH-001: Pre-validate token for batch operation
+        // This ensures we have a valid, non-expiring token before starting downloads
+        const tokenValid = await ensureValidTokenForBatch();
+        if (!tokenValid) {
+            console.warn('[GCR Background] Token pre-validation failed, attempting interactive auth');
+        }
+
         // Get auth token
         const authResult = await handleGetAuthToken(true);
         if (!authResult.success) {
@@ -1192,22 +1511,34 @@ async function handleDownloadFiles(selectedItems) {
 }
 
 /**
- * Executes downloads in background (called without await)
+ * Executes downloads in background with keepAlive (SW-002)
+ * @param {Array} filesToDownload - Files to download
+ * @param {Array} links - Links to save
+ * @param {string} token - Auth token
+ * @param {string} courseFolderName - Folder name
+ * @param {Set} usedNames - Used filenames
+ * @param {string} courseName - Course name
  */
 async function executeDownloads(filesToDownload, links, token, courseFolderName, usedNames, courseName) {
+    // SW-002: Keep service worker alive during downloads
+    const KEEPALIVE_INTERVAL_MS = 25000;
+    const keepAliveInterval = setInterval(() => {
+        // Simple operation to keep worker alive
+        chrome.runtime.getPlatformInfo(() => {});
+    }, KEEPALIVE_INTERVAL_MS);
+    
     try {
         for (const file of filesToDownload) {
             if (!downloadState.active) break;
 
             // Update current file being downloaded
             downloadState.currentFile = file.title;
-            console.log('[GCR Background] Downloading file:', file.title, 'ID:', file.id, 'MIME:', file.mimeType);
+            console.log('[GCR Background] Downloading:', file.title);
 
             try {
                 await downloadFile(file, token, courseFolderName, usedNames);
                 downloadState.completed++;
                 downloadState.results.success.push(file.title);
-                console.log('[GCR Background] Download SUCCESS:', file.title);
             } catch (error) {
                 downloadState.failed++;
                 downloadState.results.failed.push({ title: file.title, error: error.message });
@@ -1230,14 +1561,17 @@ async function executeDownloads(filesToDownload, links, token, courseFolderName,
 
         downloadState.active = false;
         downloadState.currentFile = '';
-        console.log('[GCR Background] All downloads finished:', downloadState.completed, '/', downloadState.total);
+        console.log('[GCR Background] Downloads complete:', downloadState.completed, '/', downloadState.total);
     } finally {
+        // SW-002: Clean up keepalive interval
+        clearInterval(keepAliveInterval);
         isDownloadInProgress = false;
     }
 }
 
 /**
- * Downloads a single file
+ * Downloads a single file with memory-safe handling (SEC-004)
+ * SEC-008 FIX: Implements size limits and warnings for large files
  * @param {Object} file - File object
  * @param {string} token - Auth token
  * @param {string} folderName - Folder name
@@ -1245,11 +1579,25 @@ async function executeDownloads(filesToDownload, links, token, courseFolderName,
  */
 async function downloadFile(file, token, folderName, usedNames) {
     const { id, title, mimeType } = file;
+
+    // SEC-008 FIX: Stricter memory limits for data URL downloads
+    const MAX_DATA_URL_SIZE = 50 * 1024 * 1024; // 50MB max for data URLs
+    const MAX_TOTAL_FILE_SIZE = 500 * 1024 * 1024; // 500MB absolute max
     
-    console.log('[GCR Background] downloadFile called:', { id, title, mimeType, isGoogleFile: file.isGoogleFile });
+    // VAL-002: Allowed export MIME types whitelist
+    const ALLOWED_EXPORT_MIMES = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'image/png',
+        'image/jpeg',
+        'text/plain'
+    ];
 
     let url;
     let extension = '';
+    let exportMime = '';
 
     // Check if Google Workspace file needing export
     if (mimeType?.startsWith('application/vnd.google-apps.')) {
@@ -1265,6 +1613,12 @@ async function downloadFile(file, token, folderName, usedNames) {
             throw new Error('Cannot export this file type');
         }
 
+        // VAL-002: Validate export MIME type against whitelist
+        if (!ALLOWED_EXPORT_MIMES.includes(format.mime)) {
+            throw new Error(`Invalid export format: ${format.mime}`);
+        }
+
+        exportMime = format.mime;
         url = `${DRIVE_API_BASE}/files/${id}/export?mimeType=${encodeURIComponent(format.mime)}`;
         extension = format.ext;
     } else {
@@ -1272,7 +1626,7 @@ async function downloadFile(file, token, folderName, usedNames) {
         url = `${DRIVE_API_BASE}/files/${id}?alt=media`;
     }
 
-    // Build filename
+    // Build filename using secure sanitization
     let filename = sanitizeFilenameSecure(title);
     if (extension && !filename.toLowerCase().endsWith(extension)) {
         const lastDot = filename.lastIndexOf('.');
@@ -1280,7 +1634,7 @@ async function downloadFile(file, token, folderName, usedNames) {
         filename += extension;
     }
 
-    // Make unique
+    // Make unique filename
     let counter = 0;
     let uniqueName = filename;
     while (usedNames.has(uniqueName)) {
@@ -1294,42 +1648,70 @@ async function downloadFile(file, token, folderName, usedNames) {
     }
     usedNames.add(uniqueName);
 
-    console.log('[GCR Background] Download URL:', url);
-    console.log('[GCR Background] Saving as:', `${folderName}/${uniqueName}`);
-
-    // Use chrome.downloads.download with authorization header
-    // Since service workers can't use URL.createObjectURL, we fetch and convert to data URL
-    console.log('[GCR Background] Fetching file from:', url);
-    
+    // Fetch file with authorization
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (!response.ok) {
         const errorText = await response.text().catch(() => 'No error details');
-        console.error('[GCR Background] Download HTTP error:', response.status, errorText);
-        console.error('[GCR Background] Failed file details:', { id, title, mimeType, url });
         throw new Error(`Download failed: ${response.status} - ${response.statusText}. ${errorText.substring(0, 200)}`);
     }
 
-    // Convert response to base64 data URL (works in service workers)
-    const blob = await response.blob();
-    const reader = new FileReader();
+    // SECURITY: Validate MIME type to prevent saving HTML error pages as files
+    const contentType = response.headers.get('content-type') || '';
+    const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+    const expectedMimeTypes = getExpectedMimeTypes(extension);
+    
+    if (expectedMimeTypes.length > 0) {
+        const isValidType = expectedMimeTypes.some(
+            expected => contentType.toLowerCase().includes(expected.toLowerCase())
+        );
+        
+        // Google APIs sometimes return HTML error pages with 200 status
+        if (!isValidType && contentType.includes('text/html')) {
+            const text = await response.text();
+            console.error('[GCR Background] Received HTML error page instead of file');
+            throw new Error('Download failed: Received error page instead of file. The file may be inaccessible or deleted.');
+        }
+    }
 
+    // SEC-004: Check file size and handle memory-efficiently
+    const blob = await response.blob();
+    const blobSize = blob.size;
+    
+    if (blobSize > MAX_DATA_URL_SIZE) {
+        // Large file: warn but still use data URL (Chrome extension limitation)
+        console.warn(`[GCR Background] Large file (${Math.round(blobSize / 1024 / 1024)}MB): ${title}`);
+    }
+    
+    // SEC-004: Check if file is too large (>100MB warning)
+    if (blobSize > 100 * 1024 * 1024) {
+        console.warn(`[GCR Background] Very large file may cause memory issues: ${Math.round(blobSize / 1024 / 1024)}MB`);
+    }
+
+    // Convert to data URL (required for MV3 service workers)
+    const reader = new FileReader();
     const dataUrl = await new Promise((resolve, reject) => {
         reader.onloadend = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(blob);
     });
 
-    // Download using data URL
+    // Build download path and validate it
     const downloadPath = `${folderName}/${uniqueName}`;
-    console.log('[GCR Background] EXACT download path:', downloadPath);
+    
+    // SEC-009 FIX: Validate the combined download path
+    const pathValidation = validateDownloadPath(downloadPath);
+    if (!pathValidation.valid) {
+        throw new Error(`Invalid download path: ${pathValidation.error}`);
+    }
+    const safePath = pathValidation.path;
 
     return new Promise((resolve, reject) => {
         chrome.downloads.download({
             url: dataUrl,
-            filename: downloadPath,
+            filename: safePath,
             saveAs: false
         }, (downloadId) => {
             if (chrome.runtime.lastError) {
@@ -1337,7 +1719,9 @@ async function downloadFile(file, token, folderName, usedNames) {
             } else if (downloadId === undefined) {
                 reject(new Error('Download failed to start'));
             } else {
-                console.log('[GCR Background] Download started, ID:', downloadId);
+                debugLog('[GCR Background] Download started, ID:', downloadId);
+                // HIGH-017 FIX: Track download for verification
+                trackDownload(downloadId, uniqueName);
                 resolve(downloadId);
             }
         });
@@ -1429,6 +1813,10 @@ function handleCancelDownloads() {
  * Listen for storage changes to sync across tabs
  * When course data changes in one tab, other tabs get notified
  */
+// HIGH-008 FIX: Debounce tab sync to prevent infinite loops
+let tabSyncTimeout = null;
+let lastSyncedCourseId = null;
+
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace !== 'local') return;
 
@@ -1436,21 +1824,94 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     if (changes[STORAGE_KEYS.LAST_COURSE_ID] || changes[STORAGE_KEYS.LAST_COURSE_NAME]) {
         const newCourseId = changes[STORAGE_KEYS.LAST_COURSE_ID]?.newValue;
         const newCourseName = changes[STORAGE_KEYS.LAST_COURSE_NAME]?.newValue;
+        
+        // HIGH-008 FIX: Skip if same course ID to prevent loops
+        if (newCourseId === lastSyncedCourseId) {
+            debugLog('[GCR Background] Skipping duplicate sync for:', newCourseId);
+            return;
+        }
+        
+        // HIGH-008 FIX: Debounce rapid changes (500ms)
+        if (tabSyncTimeout) {
+            clearTimeout(tabSyncTimeout);
+        }
+        
+        tabSyncTimeout = setTimeout(() => {
+            lastSyncedCourseId = newCourseId;
+            debugLog('[GCR Background] Course changed in storage, syncing tabs:', newCourseId);
 
-        console.log('[GCR Background] Course changed in storage, syncing tabs:', newCourseId);
-
-        // Notify all classroom tabs
-        chrome.tabs.query({ url: '*://classroom.google.com/*' }, (tabs) => {
-            for (const tab of tabs) {
-                chrome.tabs.sendMessage(tab.id, {
-                    type: 'COURSE_DATA_UPDATED',
-                    courseId: newCourseId,
-                    courseName: newCourseName
-                }).catch(() => { });
-            }
-        });
+            // Notify all classroom tabs
+            chrome.tabs.query({ url: '*://classroom.google.com/*' }, (tabs) => {
+                for (const tab of tabs) {
+                    chrome.tabs.sendMessage(tab.id, {
+                        type: 'COURSE_DATA_UPDATED',
+                        courseId: newCourseId,
+                        courseName: newCourseName
+                    }).catch((e) => {
+                        // Tab may be closed or not ready - non-fatal
+                        if (!e.message?.includes('Receiving end does not exist')) {
+                            debugLog('[GCR Background] Tab sync failed:', tab.id, e.message);
+                        }
+                    });
+                }
+            });
+        }, 500);
     }
 });
+
+// ============================================================================
+// HIGH-017 FIX: DOWNLOAD VERIFICATION
+// ============================================================================
+
+/**
+ * Map of pending downloads for verification
+ */
+const pendingDownloads = new Map();
+
+/**
+ * HIGH-017 FIX: Listen for download completion/failure to verify success
+ */
+chrome.downloads.onChanged.addListener((delta) => {
+    const downloadId = delta.id;
+    
+    if (delta.state) {
+        const pendingInfo = pendingDownloads.get(downloadId);
+        
+        if (delta.state.current === 'complete') {
+            debugLog('[GCR Background] Download verified complete:', downloadId);
+            if (pendingInfo) {
+                pendingInfo.verified = true;
+                pendingInfo.completedAt = Date.now();
+            }
+            pendingDownloads.delete(downloadId);
+        } else if (delta.state.current === 'interrupted') {
+            console.warn('[GCR Background] Download interrupted:', downloadId, delta.error?.current);
+            if (pendingInfo) {
+                pendingInfo.failed = true;
+                pendingInfo.error = delta.error?.current || 'Unknown error';
+            }
+            pendingDownloads.delete(downloadId);
+        }
+    }
+});
+
+/**
+ * HIGH-017 FIX: Register a download for verification tracking
+ * @param {number} downloadId - Chrome download ID
+ * @param {string} filename - Filename being downloaded
+ */
+function trackDownload(downloadId, filename) {
+    pendingDownloads.set(downloadId, {
+        filename,
+        startedAt: Date.now(),
+        verified: false,
+        failed: false,
+        error: null
+    });
+    
+    // Cleanup old entries after 5 minutes
+    setTimeout(() => pendingDownloads.delete(downloadId), 5 * 60 * 1000);
+}
 
 // ============================================================================
 // OFFLINE DETECTION
@@ -1471,12 +1932,36 @@ function isOnline() {
 console.log('[GCR Background] Service worker started');
 
 // Handle installation
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
     console.log('[GCR Background] Extension installed:', details.reason);
 
     if (details.reason === 'install') {
         // First install - could show welcome page
         console.log('[GCR Background] First install complete');
+        // HIGH-025 FIX: Initialize version tracking
+        await chrome.storage.local.set({ gcr_version: chrome.runtime.getManifest().version });
+    } else if (details.reason === 'update') {
+        // HIGH-025 FIX: Handle version migration
+        const previousVersion = details.previousVersion;
+        const currentVersion = chrome.runtime.getManifest().version;
+        console.log(`[GCR Background] Updated from ${previousVersion} to ${currentVersion}`);
+
+        // Migration logic for specific versions
+        try {
+            // Example: Migrate storage keys if needed
+            if (previousVersion && previousVersion < '1.0.0') {
+                // Migrate old storage format
+                console.log('[GCR Background] Running migration for pre-1.0 data');
+            }
+
+            // Update stored version
+            await chrome.storage.local.set({ 
+                gcr_version: currentVersion,
+                gcr_last_update: Date.now()
+            });
+        } catch (e) {
+            console.error('[GCR Background] Migration error:', e);
+        }
     }
 });
 

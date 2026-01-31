@@ -4,11 +4,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- SEC-006 FIX: Content Security Policy to prevent XSS and inline script injection -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.googleapis.com https://classroom.googleapis.com https://accounts.google.com;">
   <title>ClassMate - Classroom Downloader</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SEC-007 FIX: Added crossorigin attribute for CORS font loading -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
 </head>
 
 <body>
@@ -284,16 +287,25 @@
     </footer>
 
     <!-- Progress Overlay -->
-    <div class="gcr-progress-overlay" id="progress-overlay">
-      <div class="gcr-progress-title">📥 Downloading...</div>
-      <div class="gcr-progress-subtitle" id="progress-file">Preparing your files...</div>
-      <div class="gcr-progress-bar">
+    <div class="gcr-progress-overlay" id="progress-overlay" role="alertdialog" aria-labelledby="progress-title" aria-describedby="progress-file">
+      <div class="gcr-progress-title" id="progress-title">📥 Downloading...</div>
+      <div class="gcr-progress-subtitle" id="progress-file" aria-live="polite">Preparing your files...</div>
+      <div class="gcr-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
         <div class="gcr-progress-fill" id="progress-fill" style="width: 0%"></div>
       </div>
-      <div class="gcr-progress-stats" id="progress-stats">0 / 0 files</div>
+      <div class="gcr-progress-stats" id="progress-stats" aria-live="polite">0 / 0 files</div>
       <div class="gcr-progress-actions">
         <button class="gcr-btn gcr-btn-secondary" id="cancel-download-btn">❌ Cancel</button>
       </div>
+    </div>
+
+    <!-- HIGH-007 FIX: Privacy Policy and Version Info -->
+    <div class="gcr-footer-meta" style="display:flex;justify-content:center;gap:16px;padding:8px 12px;font-size:11px;color:#94a3b8;border-top:1px solid rgba(148,163,184,0.2);background:rgba(0,0,0,0.02);">
+      <span id="version-badge" title="ClassMate version">v1.0.5</span>
+      <span style="color:#cbd5e1;">•</span>
+      <a href="docs/privacy.html" target="_blank" rel="noopener noreferrer" style="color:#8b5cf6;text-decoration:none;" aria-label="View Privacy Policy">🔒 Privacy Policy</a>
+      <span style="color:#cbd5e1;">•</span>
+      <a href="https://classmateextension.dev" target="_blank" rel="noopener noreferrer" style="color:#8b5cf6;text-decoration:none;" aria-label="Get help">❓ Help</a>
     </div>
 
   </div>

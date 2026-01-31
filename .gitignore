@@ -1,4 +1,25 @@
-﻿EXTENSION_KEYS.txt
+﻿# Sensitive Extension Keys - NEVER COMMIT
+EXTENSION_KEYS.txt
 gcr-downloader.pem
 *.pem
 *.key
+*.crx
+
+# Build artifacts
+extract_key.py
+
+# System files
+.DS_Store
+Thumbs.db
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

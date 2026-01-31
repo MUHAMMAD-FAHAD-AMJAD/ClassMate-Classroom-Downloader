@@ -1,21 +1,26 @@
-# 📚 ClassMate – Google Classroom Material Downloader
+<p align="center">
+  <img src="icons/icon128.png" alt="ClassMate Logo" width="120"/>
+</p>
 
-<div align="center">
+<h1 align="center">🎓 ClassMate</h1>
+<h3 align="center">Google Classroom Bulk Downloader</h3>
 
-![ClassMate Banner](icons/icon128.png)
+<p align="center">
+  <strong>Download all your course materials with one click!</strong>
+</p>
 
-### **Download all your Google Classroom materials with a single click!**
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-1.0.2-purple?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Manifest-V3-green?style=flat-square" alt="Manifest V3"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License"/>
+  <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome"/>
+</p>
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](#changelog)
-[![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/)
-[![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Chrome](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)](https://www.google.com/chrome/)
-
-**Stop downloading files one-by-one. ClassMate lets you batch download PDFs, slides, docs, and more from any course.**
-
-[📥 Install Now](#-quick-install-2-minutes) · [🐛 Report Bug](https://github.com/MUHAMMAD-FAHAD-AMJAD/SLIDE-DOWNLOADER-EXTENSION/issues) · [💡 Request Feature](https://github.com/MUHAMMAD-FAHAD-AMJAD/SLIDE-DOWNLOADER-EXTENSION/discussions)
-
-</div>
+<p align="center">
+  <a href="https://classmateextension.dev">🌐 Website</a> •
+  <a href="https://classmateextension.dev/privacy.html">🔒 Privacy Policy</a> •
+  <a href="#-installation">📦 Install</a>
+</p>
 
 ---
 
@@ -23,164 +28,103 @@
 
 | Feature | Description |
 |---------|-------------|
-| 🔘 **Floating Download Button** | Always-visible button on every Google Classroom page |
-| 🔍 **Smart Course Detection** | Automatically detects when you switch courses |
-| 📦 **Batch Downloads** | Select and download multiple files at once |
-| 📁 **15+ File Types** | PDFs, Docs, Slides, Sheets, Images, Videos, and more |
-| 🔄 **Multi-Tab Sync** | Badge updates across all open Classroom tabs |
-| 💾 **Smart Caching** | Remembers course data even when on dashboard |
-| 🌐 **Offline Detection** | Graceful handling when network is unavailable |
-| 🔒 **Security Hardened** | Path traversal & XSS prevention built-in |
+| 🚀 **One-Click Downloads** | Download all course materials instantly |
+| 📁 **Smart Organization** | Files organized by course automatically |
+| 🔄 **Google Docs Export** | Docs → PDF, Sheets → XLSX, Slides → PDF |
+| 🔍 **Search & Filter** | Find files by name, type, or uploader |
+| 🌙 **Dark Mode** | Modern, eye-friendly interface |
+| 🔒 **Privacy First** | No data collection, read-only access |
+| ⚡ **Rate Limiting** | Built-in protection against API throttling |
 
 ---
 
-## 📁 Supported File Types
+## 📦 Installation
 
-| File Type | Action | Output |
-|-----------|--------|--------|
-| 📝 Google Docs | Export | PDF |
-| 📊 Google Slides | Export | PDF |
-| 📈 Google Sheets | Export | XLSX |
-| 🎨 Google Drawings | Export | PNG |
-| 📄 Regular PDFs | Download | PDF |
-| 📽️ PowerPoint | Download | PPTX |
-| 📃 Word Documents | Download | DOCX |
-| 🖼️ Images | Download | Original |
-| 📋 Google Forms | Save Link | TXT |
-| ▶️ YouTube Videos | Save Link | TXT |
-| 🔗 External Links | Save Link | TXT |
+### Quick Install (2 minutes)
+
+1. **Download** this repository (Code → Download ZIP)
+2. **Extract** the ZIP file
+3. **Open Chrome** → Go to `chrome://extensions/`
+4. **Enable** "Developer Mode" (top-right toggle)
+5. **Click** "Load unpacked" → Select the `gcr-downloader` folder
+6. **Done!** Visit Google Classroom and look for the download button
 
 ---
 
-## 🚀 Quick Install (2 Minutes)
+## 🎯 How to Use
 
-### Step 1: Download
-📥 [**Download ZIP**](https://github.com/MUHAMMAD-FAHAD-AMJAD/SLIDE-DOWNLOADER-EXTENSION/archive/refs/heads/main.zip) and extract to any folder (e.g., Desktop)
+### Method 1: Floating Button
+1. Go to any Google Classroom course
+2. Click the **green download button** (bottom-right)
+3. Select files → Click Download
 
-### Step 2: Load in Chrome
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer Mode** (toggle in top-right corner)
-3. Click **"Load unpacked"**
-4. Select the extracted folder
-
-### Step 3: Start Using
-1. Go to [Google Classroom](https://classroom.google.com)
-2. Click **"Allow"** when Google asks for permission
-3. Visit any course → Click the floating **Download** button
-4. Select files → Click **Download** → Done! 🎉
-
-<details>
-<summary>📸 <b>See Installation Screenshots</b></summary>
-
-1. **Enable Developer Mode**
-   - Go to `chrome://extensions/`
-   - Toggle "Developer mode" ON (top-right)
-
-2. **Load the Extension**
-   - Click "Load unpacked"
-   - Select the extracted folder
-
-3. **Authorize with Google**
-   - Use your university/school Google account
-   - Allow the requested permissions
-
-</details>
+### Method 2: Extension Popup
+1. Click the ClassMate icon in Chrome toolbar
+2. Browse your course files
+3. Select and download
 
 ---
 
-## 🔧 Troubleshooting
+## 🔒 Privacy & Security
 
-| Problem | Solution |
-|---------|----------|
-| "OAuth error" | Sign into your university Google account in Chrome first |
-| Button not visible | Refresh the page (`Ctrl+R` / `Cmd+R`) |
-| Can't see courses | You must be enrolled in at least one Google Classroom course |
-| Downloads failing | Check internet connection and try again |
-| "Extension ID error" | Re-download and reinstall the extension |
+**Your data stays private:**
+- ✅ All processing happens locally on your device
+- ✅ No external servers or data collection
+- ✅ Read-only access to your Classroom
+- ✅ OAuth 2.0 secure authentication
+- ✅ Open source - verify the code yourself
+
+[Read our full Privacy Policy](https://classmateextension.dev/privacy.html)
 
 ---
 
-## 🔐 Privacy & Security
+## 📋 Permissions Explained
 
-| Aspect | Details |
-|--------|---------|
-| 📊 **Data Collection** | None – all processing is 100% local |
-| 🌐 **External Servers** | None – only official Google APIs |
-| 🔑 **Credentials** | OAuth tokens only, never passwords |
-| 🛡️ **Security** | Path traversal blocking, XSS prevention, rate limiting |
-
-### Why These Permissions?
-
-| Permission | Reason |
-|------------|--------|
-| `identity` | Sign in with Google OAuth |
-| `storage` | Cache course data locally |
+| Permission | Why We Need It |
+|------------|----------------|
+| `identity` | Sign in with Google |
+| `storage` | Remember your preferences |
 | `downloads` | Save files to your computer |
-| `classroom.google.com` | Access Classroom pages |
-| `googleapis.com` | Fetch files from Google APIs |
+| `activeTab` | Interact with Classroom page |
+| `tabs` | Sync state across tabs |
+| `alarms` | Background token refresh |
 
 ---
 
-## 🏗️ Project Structure
+## 🛠️ Technical Details
 
-```
-SLIDE-DOWNLOADER-EXTENSION/
-├── manifest.json           # Extension configuration (MV3)
-├── background.js           # Service worker (API, auth, downloads)
-├── content.js              # Floating button & course detection
-├── popup.html/js           # Extension popup UI
-├── styles.css              # Styling
-├── utils/
-│   ├── auth.js             # OAuth 2.0 authentication
-│   ├── rateLimiter.js      # API rate limiting (90 req/min)
-│   ├── sanitizer.js        # Security sanitization
-│   ├── workerState.js      # Service worker persistence
-│   ├── largeFileHandler.js # File size validation
-│   ├── helpers.js          # Utility functions
-│   └── download.js         # Download manager
-└── icons/                  # Extension icons
-```
+- **Manifest Version:** 3 (latest)
+- **Minimum Chrome:** 100+
+- **Architecture:** Service Worker + Content Script
+- **APIs Used:** Google Classroom API, Google Drive API
 
 ---
 
-## 📜 Changelog
+## ⚠️ Known Limitations
 
-### v2.0.0 (Latest)
-- 🔒 **Security**: Path traversal & XSS protection
-- ⚡ **Performance**: Token bucket rate limiting
-- 💾 **Reliability**: Persistent download queue
-- 🔐 **Auth**: Proactive token refresh
-- 📦 **Downloads**: Large file validation (warn 500MB+, block 2GB+)
-- 🛡️ **UX**: Duplicate download prevention
-
-### v1.0.0
-- 🎉 Initial release with smart course detection, caching, and batch downloads
+- Files download one at a time (sequential, not parallel)
+- Google Docs export to PDF only (not DOCX)
+- Single course at a time
+- Shared API quota (10,000 requests/day for all users)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing`)
-3. Make your changes and test thoroughly
-4. Submit a pull request
+Contributions welcome! Feel free to:
+- 🐛 Report bugs via [Issues](https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues)
+- 💡 Suggest features
+- 🔧 Submit pull requests
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
+[MIT License](LICENSE) - Feel free to use and modify!
 
 ---
 
-<div align="center">
-
-**Made with ❤️ for students everywhere**
-
-⭐ **Star this repo** if ClassMate helped you save time!
-
-[![GitHub](https://img.shields.io/badge/GitHub-MUHAMMAD--FAHAD--AMJAD-181717?logo=github)](https://github.com/MUHAMMAD-FAHAD-AMJAD)
-
-</div>
+<p align="center">
+  <strong>Made with ❤️ for students everywhere</strong><br>
+  <sub>Not affiliated with Google Inc.</sub>
+</p>
