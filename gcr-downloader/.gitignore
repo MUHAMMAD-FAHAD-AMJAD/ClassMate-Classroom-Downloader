@@ -1,19 +1,80 @@
-# Dependencies
-node_modules
-.DS_Store
-*.log
-.env
+# ============================================
+# ClassMate Extension - Git Ignore
+# ============================================
 
-# Extension key security - NEVER COMMIT
+# ===========================================
+# 🔐 SECURITY - NEVER COMMIT THESE FILES
+# ===========================================
 *.pem
+*.key
 *.crx
-EXTENSION_KEYS.txt
-manifest.dev.json
-
-# Distribution folders
-gcr-downloader-dist/
 *.zip
+EXTENSION_KEYS.txt
+extract_key.py
 
-# Private/Setup files - NOT for GitHub
+# ===========================================
+# 🌍 Environment Variables
+# ===========================================
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# ===========================================
+# 📦 Dependencies & Build
+# ===========================================
+node_modules/
+dist/
+build/
+*.tgz
+
+# ===========================================
+# 💻 IDE & Editor
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# ===========================================
+# 🖥️ OS Generated Files
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===========================================
+# 📝 Logs & Debug
+# ===========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================================
+# 🧪 Testing
+# ===========================================
+coverage/
+.nyc_output/
+
+# ===========================================
+# 📁 Temporary & Private Files
+# ===========================================
+*.tmp
+*.temp
+*.bak
+*.backup
+manifest.dev.json
+gcr-downloader-dist/
 GITHUB_SETUP.md
 ERROR_REPORT.md

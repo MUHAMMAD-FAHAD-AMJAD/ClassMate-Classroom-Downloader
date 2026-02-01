@@ -5,6 +5,21 @@ All notable changes to ClassMate - Classroom Downloader will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-02-01
+
+### Fixed
+- **Critical: Extension ID Consistency** - Added `key` field to manifest.json to ensure all installations (from GitHub or any source) get the same extension ID (`nkgiceemmjegjjjkpmipihmdinbahonm`). Previously, unpacked extensions would get different IDs based on the folder path, causing OAuth to fail for other users.
+
+### Changed
+- Version bumped to 1.0.6
+
+### Note
+This version requires updating Google Cloud Console OAuth settings:
+- Chrome Extension Client Item ID → `nkgiceemmjegjjjkpmipihmdinbahonm`
+- Web Client Redirect URI → `https://nkgiceemmjegjjjkpmipihmdinbahonm.chromiumapp.org/`
+
+---
+
 ## [1.0.5] - 2026-01-31
 
 ### Security Fixes

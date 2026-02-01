@@ -3,32 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClassMate - Google Classroom Downloader | Download All Materials Instantly</title>
-    <meta name="description" content="Download all your Google Classroom materials with one click. Free, private, and fast bulk downloader for students.">
-    <meta name="keywords" content="Google Classroom, downloader, bulk download, Chrome extension, student tools">
-    <meta name="author" content="ClassMate Team">
-    <meta property="og:title" content="ClassMate - Google Classroom Downloader">
-    <meta property="og:description" content="Download all your Google Classroom materials instantly with one click!">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://classmateextension.dev">
+    <title>ClassMate - Google Classroom Bulk Downloader</title>
+    <meta name="description" content="Download all your Google Classroom materials with one click. Free, secure, and privacy-focused Chrome extension.">
+    <meta name="keywords" content="Google Classroom, Download, Chrome Extension, Student Tools, ClassMate">
+    <meta name="author" content="Muhammad Fahad Amjad">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icon128.png">
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #6366f1;
+            --primary-light: #818cf8;
             --primary-dark: #4f46e5;
-            --secondary: #8b5cf6;
+            --secondary: #ec4899;
             --accent: #06b6d4;
-            --accent-green: #10b981;
+            --success: #10b981;
+            --warning: #f59e0b;
             --dark: #0f172a;
             --dark-light: #1e293b;
-            --gray: #64748b;
-            --gray-light: #94a3b8;
-            --white: #ffffff;
-            --glass: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --glow: 0 0 60px rgba(99, 102, 241, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            --gradient-2: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+            --gradient-3: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
         }
 
         * {
@@ -43,111 +48,112 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            line-height: 1.7;
-            color: var(--white);
             background: var(--dark);
-            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.7;
             overflow-x: hidden;
         }
 
         /* Animated Background */
-        .bg-gradient {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-            background: 
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.3), transparent),
-                radial-gradient(ellipse 60% 40% at 80% 50%, rgba(139, 92, 246, 0.15), transparent),
-                radial-gradient(ellipse 50% 30% at 20% 80%, rgba(6, 182, 212, 0.15), transparent),
-                var(--dark);
-        }
-
-        .floating-orbs {
+        .bg-animation {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            pointer-events: none;
             overflow: hidden;
         }
 
-        .orb {
+        .bg-animation::before {
+            content: '';
             position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            animation: bgMove 20s ease-in-out infinite;
+        }
+
+        @keyframes bgMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-5%, 5%) rotate(5deg); }
+            50% { transform: translate(5%, -5%) rotate(-5deg); }
+            75% { transform: translate(-3%, -3%) rotate(3deg); }
+        }
+
+        /* Floating Orbs */
+        .orb {
+            position: fixed;
             border-radius: 50%;
             filter: blur(80px);
-            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
         }
 
         .orb-1 {
             width: 600px;
             height: 600px;
-            background: rgba(99, 102, 241, 0.15);
+            background: rgba(99, 102, 241, 0.3);
             top: -200px;
             right: -200px;
-            animation-delay: 0s;
+            animation: float1 15s ease-in-out infinite;
         }
 
         .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: rgba(139, 92, 246, 0.12);
-            bottom: -100px;
-            left: -100px;
-            animation-delay: -5s;
+            width: 500px;
+            height: 500px;
+            background: rgba(236, 72, 153, 0.25);
+            bottom: -150px;
+            left: -150px;
+            animation: float2 18s ease-in-out infinite;
         }
 
         .orb-3 {
-            width: 300px;
-            height: 300px;
-            background: rgba(6, 182, 212, 0.1);
+            width: 400px;
+            height: 400px;
+            background: rgba(6, 182, 212, 0.2);
             top: 50%;
             left: 50%;
-            animation-delay: -10s;
+            transform: translate(-50%, -50%);
+            animation: float3 12s ease-in-out infinite;
         }
 
-        @keyframes float {
+        @keyframes float1 {
             0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(50px, -50px) scale(1.1); }
-            50% { transform: translate(-30px, 30px) scale(0.95); }
-            75% { transform: translate(-50px, -30px) scale(1.05); }
+            50% { transform: translate(-50px, 50px) scale(1.1); }
         }
 
-        /* Grid Pattern */
-        .grid-pattern {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, -50px) scale(1.05); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.15); }
         }
 
         /* Navigation */
-        .nav {
+        .navbar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
-            padding: 20px 40px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 1rem 2rem;
+            transition: all 0.3s ease;
         }
 
-        .nav.scrolled {
+        .navbar.scrolled {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--glass-border);
-            padding: 15px 40px;
         }
 
         .nav-container {
@@ -163,46 +169,53 @@
             align-items: center;
             gap: 12px;
             text-decoration: none;
-            color: var(--white);
-            font-weight: 700;
-            font-size: 1.5rem;
-            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-primary);
         }
 
         .nav-logo img {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+        }
+
+        .nav-logo span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .nav-links {
             display: flex;
-            gap: 40px;
-            align-items: center;
+            gap: 2rem;
+            list-style: none;
         }
 
         .nav-links a {
-            color: var(--gray-light);
+            color: var(--text-secondary);
             text-decoration: none;
             font-weight: 500;
             font-size: 0.95rem;
-            transition: color 0.3s;
+            transition: all 0.3s ease;
             position: relative;
-        }
-
-        .nav-links a:hover {
-            color: var(--white);
         }
 
         .nav-links a::after {
             content: '';
             position: absolute;
-            bottom: -5px;
+            bottom: -4px;
             left: 0;
             width: 0;
             height: 2px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            transition: width 0.3s;
+            background: var(--gradient-2);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
         }
 
         .nav-links a:hover::after {
@@ -210,21 +223,20 @@
         }
 
         .nav-cta {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white) !important;
-            padding: 10px 24px;
+            background: var(--gradient-2);
+            color: white;
+            padding: 0.75rem 1.5rem;
             border-radius: 50px;
+            text-decoration: none;
             font-weight: 600;
-            transition: transform 0.3s, box-shadow 0.3s !important;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
         }
 
         .nav-cta:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
-        }
-
-        .nav-cta::after {
-            display: none !important;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
         }
 
         /* Hero Section */
@@ -233,35 +245,41 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 120px 40px 80px;
+            padding: 120px 2rem 80px;
             position: relative;
         }
 
         .hero-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            text-align: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-content {
+            z-index: 1;
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--glass);
+            background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 0.875rem;
-            color: var(--gray-light);
-            margin-bottom: 30px;
             backdrop-filter: blur(10px);
-            animation: fadeInUp 0.8s ease-out;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
         }
 
         .hero-badge .dot {
             width: 8px;
             height: 8px;
-            background: var(--accent-green);
+            background: var(--success);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
@@ -271,57 +289,16 @@
             50% { opacity: 0.5; transform: scale(1.2); }
         }
 
-        .hero-logo {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 30px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--glow), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeInUp 0.8s ease-out 0.1s both;
-            position: relative;
-        }
-
-        .hero-logo::before {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            background: linear-gradient(135deg, var(--primary), var(--accent), var(--secondary));
-            border-radius: 32px;
-            z-index: -1;
-            opacity: 0.5;
-            animation: rotate 4s linear infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .hero-logo img {
-            width: 70px;
-            height: 70px;
-            filter: brightness(0) invert(1);
-        }
-
-        .hero h1 {
+        .hero-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-size: 4rem;
             font-weight: 800;
             line-height: 1.1;
-            margin-bottom: 24px;
-            background: linear-gradient(135deg, var(--white) 0%, var(--gray-light) 50%, var(--white) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeInUp 0.8s ease-out 0.2s both;
+            margin-bottom: 1.5rem;
         }
 
-        .hero h1 span {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
+        .hero-title .gradient-text {
+            background: var(--gradient-2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -329,179 +306,273 @@
 
         .hero-description {
             font-size: 1.25rem;
-            color: var(--gray-light);
-            max-width: 600px;
-            margin: 0 auto 50px;
-            animation: fadeInUp 0.8s ease-out 0.3s both;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            max-width: 500px;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 20px;
-            justify-content: center;
+            gap: 1rem;
             flex-wrap: wrap;
-            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 16px 32px;
-            border-radius: 16px;
+            padding: 1rem 2rem;
+            border-radius: 14px;
             font-weight: 600;
             font-size: 1rem;
             text-decoration: none;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+            background: var(--gradient-2);
+            color: white;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
         }
 
         .btn-primary:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
         }
 
         .btn-secondary {
-            background: var(--glass);
+            background: var(--glass-bg);
+            color: var(--text-primary);
             border: 1px solid var(--glass-border);
-            color: var(--white);
             backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-4px);
-            border-color: var(--primary);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Stats */
         .hero-stats {
             display: flex;
-            justify-content: center;
-            gap: 60px;
-            margin-top: 80px;
-            animation: fadeInUp 0.8s ease-out 0.5s both;
+            gap: 3rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
         }
 
         .stat {
-            text-align: center;
+            text-align: left;
         }
 
         .stat-value {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--white), var(--gray-light));
+            background: var(--gradient-3);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .stat-label {
-            color: var(--gray);
-            font-size: 0.875rem;
-            margin-top: 4px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+            transition: transform 0.5s ease;
+        }
+
+        .hero-card:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--glass-border);
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .file-icon.pdf { background: rgba(239, 68, 68, 0.2); }
+        .file-icon.doc { background: rgba(59, 130, 246, 0.2); }
+        .file-icon.ppt { background: rgba(249, 115, 22, 0.2); }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .file-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .download-btn {
+            width: 100%;
+            margin-top: 1.5rem;
+            background: var(--gradient-2);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
         }
 
         /* Features Section */
         .features {
-            padding: 120px 40px;
+            padding: 100px 2rem;
             position: relative;
-        }
-
-        .section-container {
-            max-width: 1200px;
-            margin: 0 auto;
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 80px;
+            max-width: 700px;
+            margin: 0 auto 4rem;
         }
 
         .section-badge {
             display: inline-block;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             padding: 8px 20px;
             border-radius: 50px;
-            font-size: 0.875rem;
-            color: var(--primary);
-            font-weight: 600;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 0.85rem;
+            color: var(--primary-light);
+            margin-bottom: 1rem;
         }
 
         .section-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: 3rem;
             font-weight: 700;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, var(--white), var(--gray-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin-bottom: 1rem;
         }
 
-        .section-subtitle {
-            color: var(--gray);
-            font-size: 1.125rem;
-            max-width: 600px;
-            margin: 0 auto;
+        .section-description {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .feature-card {
-            background: var(--glass);
+            background: var(--glass-bg);
             border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
             border-radius: 24px;
-            padding: 40px;
-            backdrop-filter: blur(20px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 2rem;
+            transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
         }
@@ -512,20 +583,20 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            opacity: 0;
-            transition: opacity 0.4s;
+            height: 3px;
+            background: var(--gradient-2);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
         }
 
         .feature-card:hover {
             transform: translateY(-8px);
-            border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
         }
 
         .feature-card:hover::before {
-            opacity: 1;
+            transform: scaleX(1);
         }
 
         .feature-icon {
@@ -535,455 +606,605 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
-            margin-bottom: 24px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
         }
 
-        .feature-card h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--white);
-        }
+        .feature-icon.purple { background: rgba(99, 102, 241, 0.2); }
+        .feature-icon.pink { background: rgba(236, 72, 153, 0.2); }
+        .feature-icon.cyan { background: rgba(6, 182, 212, 0.2); }
+        .feature-icon.green { background: rgba(16, 185, 129, 0.2); }
+        .feature-icon.orange { background: rgba(249, 115, 22, 0.2); }
+        .feature-icon.blue { background: rgba(59, 130, 246, 0.2); }
 
-        .feature-card p {
-            color: var(--gray);
-            line-height: 1.8;
-        }
-
-        /* How It Works */
-        .how-it-works {
-            padding: 120px 40px;
-            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.03), transparent);
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 40px;
-            margin-top: 60px;
-        }
-
-        .step {
-            text-align: center;
-            position: relative;
-        }
-
-        .step-number {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--white);
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
-            position: relative;
-        }
-
-        .step-number::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border: 2px dashed rgba(99, 102, 241, 0.3);
-            border-radius: 50%;
-            animation: spin 20s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .step h3 {
-            font-family: 'Space Grotesk', sans-serif;
+        .feature-title {
             font-size: 1.25rem;
             font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--white);
+            margin-bottom: 0.75rem;
         }
 
-        .step p {
-            color: var(--gray);
+        .feature-description {
+            color: var(--text-secondary);
             font-size: 0.95rem;
-        }
-
-        .step-connector {
-            display: none;
-        }
-
-        @media (min-width: 900px) {
-            .step-connector {
-                display: block;
-                position: absolute;
-                top: 40px;
-                right: -60px;
-                width: 80px;
-                height: 2px;
-                background: linear-gradient(90deg, var(--primary), transparent);
-            }
-
-            .step:last-child .step-connector {
-                display: none;
-            }
         }
 
         /* Privacy Section */
         .privacy {
-            padding: 120px 40px;
-        }
-
-        .privacy-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .privacy-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 40px;
-            backdrop-filter: blur(20px);
-        }
-
-        .privacy-card.highlight {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1));
-            border-color: rgba(16, 185, 129, 0.3);
-        }
-
-        .privacy-card h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--white);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .privacy-list {
-            list-style: none;
-        }
-
-        .privacy-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px 0;
-            color: var(--gray-light);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .privacy-list li:last-child {
-            border-bottom: none;
-        }
-
-        .privacy-list .icon {
-            flex-shrink: 0;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-        }
-
-        .privacy-list .icon.check {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--accent-green);
-        }
-
-        .privacy-list .icon.cross {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-
-        /* CTA Section */
-        .cta-section {
-            padding: 120px 40px;
-            text-align: center;
+            padding: 100px 2rem;
             position: relative;
         }
 
-        .cta-box {
+        .privacy-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .privacy-content {
+            z-index: 1;
+        }
+
+        .privacy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .privacy-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .privacy-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .privacy-item h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .privacy-item p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .privacy-visual {
+            display: flex;
+            justify-content: center;
+        }
+
+        .shield-container {
+            position: relative;
+            width: 300px;
+            height: 350px;
+        }
+
+        .shield {
+            width: 100%;
+            height: 100%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .shield-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+
+        .shield-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .shield-rings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-radius: 50%;
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+
+        .shield-rings::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: -30px;
+            right: -30px;
+            bottom: -30px;
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            animation: ringPulse 3s ease-in-out infinite 0.5s;
+        }
+
+        @keyframes ringPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.2; }
+        }
+
+        /* Installation Section */
+        .installation {
+            padding: 100px 2rem;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 30px;
+            top: 70px;
+            bottom: -40px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--primary), transparent);
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
+            background: var(--gradient-2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 0.5rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+        }
+
+        .step-code {
+            background: var(--dark-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-top: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 100px 2rem;
+            text-align: center;
+        }
+
+        .cta-card {
             max-width: 800px;
             margin: 0 auto;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 32px;
-            padding: 80px 60px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 4rem;
             position: relative;
             overflow: hidden;
         }
 
-        .cta-box::before {
+        .cta-card::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent 50%);
-            animation: pulse-bg 4s ease-in-out infinite;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient-1);
+            opacity: 0.1;
+            z-index: -1;
         }
 
-        @keyframes pulse-bg {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .cta-box h2 {
+        .cta-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(2rem, 4vw, 3rem);
+            font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 20px;
-            position: relative;
+            margin-bottom: 1rem;
         }
 
-        .cta-box p {
-            color: var(--gray-light);
-            font-size: 1.125rem;
-            margin-bottom: 40px;
-            position: relative;
+        .cta-description {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .cta-buttons {
             display: flex;
-            gap: 20px;
             justify-content: center;
+            gap: 1rem;
             flex-wrap: wrap;
-            position: relative;
         }
 
         /* Footer */
-        footer {
-            padding: 60px 40px;
+        .footer {
+            padding: 60px 2rem 30px;
             border-top: 1px solid var(--glass-border);
         }
 
         .footer-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 30px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            max-width: 300px;
         }
 
         .footer-logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            text-decoration: none;
-            color: var(--white);
-            font-weight: 700;
-            font-size: 1.25rem;
-            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 1rem;
         }
 
         .footer-logo img {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .footer-logo span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .footer-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 12px;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .footer-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
         }
 
         .footer-links {
+            list-style: none;
             display: flex;
-            gap: 30px;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .footer-links a {
-            color: var(--gray);
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.95rem;
-            transition: color 0.3s;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
         }
 
         .footer-links a:hover {
-            color: var(--white);
+            color: var(--text-primary);
         }
 
-        .footer-copy {
-            color: var(--gray);
-            font-size: 0.875rem;
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .footer-copy a {
-            color: var(--primary);
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-legal a {
+            color: var(--text-secondary);
             text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
         }
 
-        /* Mobile Menu */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: var(--white);
-            font-size: 1.5rem;
-            cursor: pointer;
+        .footer-legal a:hover {
+            color: var(--text-primary);
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .nav {
-                padding: 15px 20px;
+        @media (max-width: 1024px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
             }
 
+            .hero-description {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .hero-card {
+                transform: none;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .privacy-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .privacy-visual {
+                order: -1;
+            }
+
+            .footer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
             .nav-links {
                 display: none;
             }
 
-            .mobile-menu-btn {
-                display: block;
+            .hero-title {
+                font-size: 2.5rem;
             }
 
-            .hero {
-                padding: 100px 20px 60px;
-            }
-
-            .hero-stats {
-                flex-direction: column;
-                gap: 30px;
-            }
-
-            .features, .how-it-works, .privacy, .cta-section {
-                padding: 80px 20px;
+            .section-title {
+                font-size: 2rem;
             }
 
             .features-grid {
                 grid-template-columns: 1fr;
             }
 
-            .cta-box {
-                padding: 50px 30px;
+            .hero-stats {
+                flex-direction: column;
+                gap: 1.5rem;
             }
 
-            .footer-container {
-                flex-direction: column;
+            .stat {
                 text-align: center;
             }
 
-            .footer-links {
-                flex-wrap: wrap;
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-brand {
+                max-width: none;
+            }
+
+            .footer-social {
                 justify-content: center;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
             }
         }
 
-        /* Scroll animations */
-        .animate-on-scroll {
+        /* Scroll Animations */
+        .fade-in {
             opacity: 0;
-            transform: translateY(40px);
-            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(30px);
+            transition: all 0.6s ease;
         }
 
-        .animate-on-scroll.visible {
+        .fade-in.visible {
             opacity: 1;
             transform: translateY(0);
-        }
-
-        /* Code Block Styling */
-        .code-block {
-            background: var(--dark-light);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 20px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 0.9rem;
-            color: var(--accent);
-            overflow-x: auto;
-            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="bg-gradient"></div>
-    <div class="floating-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-    </div>
-    <div class="grid-pattern"></div>
+    <div class="bg-animation"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
 
     <!-- Navigation -->
-    <nav class="nav" id="nav">
+    <nav class="navbar">
         <div class="nav-container">
             <a href="#" class="nav-logo">
                 <img src="icon128.png" alt="ClassMate">
-                ClassMate
+                <span>ClassMate</span>
             </a>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#how-it-works">How It Works</a>
-                <a href="#privacy">Privacy</a>
-                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" target="_blank" class="nav-cta">
-                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;margin-right:6px;"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                    GitHub
-                </a>
-            </div>
-            <button class="mobile-menu-btn">☰</button>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#privacy">Privacy</a></li>
+                <li><a href="#installation">Install</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" class="nav-cta">
+                ⭐ Star on GitHub
+            </a>
         </div>
     </nav>
 
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-container">
-            <div class="hero-badge">
-                <span class="dot"></span>
-                Free & Open Source Chrome Extension
-            </div>
-            
-            <div class="hero-logo">
-                <img src="icon128.png" alt="ClassMate Logo">
-            </div>
-            
-            <h1>Download All Your<br><span>Classroom Materials</span><br>In One Click</h1>
-            
-            <p class="hero-description">
-                The most powerful Google Classroom bulk downloader. Save hours of time with instant downloads of PDFs, slides, docs, and more — completely free and private.
-            </p>
-            
-            <div class="hero-buttons">
-                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/releases" class="btn btn-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7,10 12,15 17,10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Download Extension
-                </a>
-                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" class="btn btn-secondary">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                    View Source
-                </a>
-            </div>
-            
-            <div class="hero-stats">
-                <div class="stat">
-                    <div class="stat-value">100%</div>
-                    <div class="stat-label">Free & Open Source</div>
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="dot"></span>
+                    Open Source & Free Forever
                 </div>
-                <div class="stat">
-                    <div class="stat-value">v1.0.5</div>
-                    <div class="stat-label">Latest Version</div>
+                <h1 class="hero-title">
+                    Download Your<br>
+                    <span class="gradient-text">Google Classroom</span><br>
+                    Materials Instantly
+                </h1>
+                <p class="hero-description">
+                    The most powerful Chrome extension to bulk download all your course files, assignments, and materials with just one click. Privacy-first, no data collection.
+                </p>
+                <div class="hero-buttons">
+                    <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" class="btn btn-primary">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        Get Started
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        Learn More →
+                    </a>
                 </div>
-                <div class="stat">
-                    <div class="stat-value">0 KB</div>
-                    <div class="stat-label">Data Collected</div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Free & Open Source</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Data Collected</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">v1.0.5</div>
+                        <div class="stat-label">Latest Version</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="card-header">
+                        <div class="card-icon">📚</div>
+                        <div>
+                            <div class="card-title">Computer Science 101</div>
+                            <div class="card-subtitle">12 files ready to download</div>
+                        </div>
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item">
+                            <div class="file-icon pdf">📄</div>
+                            <div class="file-info">
+                                <div class="file-name">Lecture_Notes_Week1.pdf</div>
+                                <div class="file-size">2.4 MB</div>
+                            </div>
+                            <div class="file-check">✓</div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-icon doc">📝</div>
+                            <div class="file-info">
+                                <div class="file-name">Assignment_Guidelines.docx</div>
+                                <div class="file-size">1.1 MB</div>
+                            </div>
+                            <div class="file-check">✓</div>
+                        </div>
+                        <div class="file-item">
+                            <div class="file-icon ppt">📊</div>
+                            <div class="file-info">
+                                <div class="file-name">Course_Overview.pptx</div>
+                                <div class="file-size">5.8 MB</div>
+                            </div>
+                            <div class="file-check">✓</div>
+                        </div>
+                    </div>
+                    <button class="download-btn">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Download All Selected
+                    </button>
                 </div>
             </div>
         </div>
@@ -991,220 +1212,251 @@
 
     <!-- Features Section -->
     <section class="features" id="features">
-        <div class="section-container">
-            <div class="section-header animate-on-scroll">
-                <span class="section-badge">✨ Features</span>
-                <h2 class="section-title">Everything You Need</h2>
-                <p class="section-subtitle">Powerful features designed to save you time and keep your files organized</p>
-            </div>
-            
-            <div class="features-grid">
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🚀</div>
-                    <h3>One-Click Bulk Downloads</h3>
-                    <p>Download all your course materials, assignments, announcements, and attachments with a single click. No more tedious manual downloads.</p>
-                </div>
-                
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">📁</div>
-                    <h3>Smart Organization</h3>
-                    <p>Files are automatically organized by course name and category. Find what you need instantly with intelligent folder structures.</p>
-                </div>
-                
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🔄</div>
-                    <h3>Auto-Convert Google Files</h3>
-                    <p>Google Docs → PDF, Sheets → Excel, Slides → PDF. All conversions happen automatically for universal compatibility.</p>
-                </div>
-                
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Search & Filter</h3>
-                    <p>Find files by name, type, or uploader. Advanced filtering helps you locate exactly what you're looking for in seconds.</p>
-                </div>
-                
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🌙</div>
-                    <h3>Beautiful Dark Mode</h3>
-                    <p>Modern, eye-friendly interface that looks great and reduces eye strain during late-night study sessions.</p>
-                </div>
-                
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Privacy First</h3>
-                    <p>100% local processing. No data collection, no tracking, no external servers. Your files stay on your device.</p>
-                </div>
-            </div>
+        <div class="section-header fade-in">
+            <span class="section-badge">✨ Features</span>
+            <h2 class="section-title">Everything You Need</h2>
+            <p class="section-description">
+                Powerful features designed to save your time and make downloading course materials effortless.
+            </p>
         </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="section-container">
-            <div class="section-header animate-on-scroll">
-                <span class="section-badge">📦 Installation</span>
-                <h2 class="section-title">Get Started in 2 Minutes</h2>
-                <p class="section-subtitle">Simple setup process to start downloading your materials</p>
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="feature-icon purple">🚀</div>
+                <h3 class="feature-title">One-Click Downloads</h3>
+                <p class="feature-description">
+                    Download all your course materials, assignments, and announcements with a single click. No more manual downloads.
+                </p>
             </div>
-            
-            <div class="steps">
-                <div class="step animate-on-scroll">
-                    <div class="step-number">1</div>
-                    <div class="step-connector"></div>
-                    <h3>Download Extension</h3>
-                    <p>Download the latest release from GitHub or clone the repository</p>
-                </div>
-                
-                <div class="step animate-on-scroll">
-                    <div class="step-number">2</div>
-                    <div class="step-connector"></div>
-                    <h3>Load in Chrome</h3>
-                    <p>Go to chrome://extensions, enable Developer Mode, click "Load unpacked"</p>
-                </div>
-                
-                <div class="step animate-on-scroll">
-                    <div class="step-number">3</div>
-                    <div class="step-connector"></div>
-                    <h3>Select Folder</h3>
-                    <p>Choose the extracted gcr-downloader folder</p>
-                </div>
-                
-                <div class="step animate-on-scroll">
-                    <div class="step-number">4</div>
-                    <h3>Start Downloading!</h3>
-                    <p>Visit Google Classroom and click the green download button</p>
-                </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon pink">📁</div>
+                <h3 class="feature-title">Smart Organization</h3>
+                <p class="feature-description">
+                    Files are automatically organized by course and category, making it easy to find what you need.
+                </p>
             </div>
-            
-            <div class="code-block animate-on-scroll" style="max-width: 600px; margin: 40px auto 0;">
-                <span style="color: var(--gray);">// Quick terminal setup</span><br>
-                <span style="color: var(--accent-green);">git clone</span> https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader.git<br>
-                <span style="color: var(--gray);">// Then load gcr-downloader folder in Chrome</span>
+            <div class="feature-card fade-in">
+                <div class="feature-icon cyan">🔄</div>
+                <h3 class="feature-title">Format Conversion</h3>
+                <p class="feature-description">
+                    Google Docs, Sheets, and Slides are automatically converted to PDF, XLSX, and standard formats.
+                </p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon green">🔍</div>
+                <h3 class="feature-title">Search & Filter</h3>
+                <p class="feature-description">
+                    Quickly find specific files by name, type, or uploader. Filter to download exactly what you need.
+                </p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon orange">🌙</div>
+                <h3 class="feature-title">Beautiful Dark Mode</h3>
+                <p class="feature-description">
+                    Easy on your eyes with a modern, sleek dark interface that looks great day or night.
+                </p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon blue">⚡</div>
+                <h3 class="feature-title">Lightning Fast</h3>
+                <p class="feature-description">
+                    Optimized performance with smart rate limiting ensures reliable downloads without API errors.
+                </p>
             </div>
         </div>
     </section>
 
     <!-- Privacy Section -->
     <section class="privacy" id="privacy">
-        <div class="section-container">
-            <div class="section-header animate-on-scroll">
-                <span class="section-badge">🛡️ Security</span>
-                <h2 class="section-title">Your Privacy Matters</h2>
-                <p class="section-subtitle">Transparent about what we access and what we don't</p>
-            </div>
-            
-            <div class="privacy-grid">
-                <div class="privacy-card highlight animate-on-scroll">
-                    <h3>✅ What We Access (Read-Only)</h3>
-                    <ul class="privacy-list">
-                        <li>
-                            <span class="icon check">✓</span>
-                            <span><strong>View your courses</strong> — To show your enrolled classes</span>
-                        </li>
-                        <li>
-                            <span class="icon check">✓</span>
-                            <span><strong>View course materials</strong> — To list downloadable files</span>
-                        </li>
-                        <li>
-                            <span class="icon check">✓</span>
-                            <span><strong>View announcements</strong> — To include announcement attachments</span>
-                        </li>
-                        <li>
-                            <span class="icon check">✓</span>
-                            <span><strong>View assignments</strong> — To download assignment materials</span>
-                        </li>
-                        <li>
-                            <span class="icon check">✓</span>
-                            <span><strong>Download from Drive</strong> — To save attached files locally</span>
-                        </li>
-                    </ul>
+        <div class="privacy-container">
+            <div class="privacy-content fade-in">
+                <span class="section-badge">🔒 Privacy First</span>
+                <h2 class="section-title">Your Data Stays Yours</h2>
+                <p class="section-description">
+                    We believe your academic data belongs to you. ClassMate is built with privacy as the foundation.
+                </p>
+                <div class="privacy-list">
+                    <div class="privacy-item">
+                        <div class="privacy-icon">✅</div>
+                        <div>
+                            <h4>100% Local Processing</h4>
+                            <p>All data processing happens on your device. Nothing leaves your computer.</p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="privacy-icon">🚫</div>
+                        <div>
+                            <h4>No Data Collection</h4>
+                            <p>We don't collect, store, or share any of your personal information.</p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="privacy-icon">👀</div>
+                        <div>
+                            <h4>Read-Only Access</h4>
+                            <p>The extension can only read your Classroom data. It cannot modify anything.</p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="privacy-icon">🔐</div>
+                        <div>
+                            <h4>Secure OAuth 2.0</h4>
+                            <p>Industry-standard authentication. We never see your Google password.</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="privacy-card animate-on-scroll">
-                    <h3>❌ What We DON'T Do</h3>
-                    <ul class="privacy-list">
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Collect your personal information</span>
-                        </li>
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Store your files on any server</span>
-                        </li>
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Track your usage or behavior</span>
-                        </li>
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Share any data with third parties</span>
-                        </li>
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Access your Google password</span>
-                        </li>
-                        <li>
-                            <span class="icon cross">✕</span>
-                            <span>Modify or delete anything in Classroom</span>
-                        </li>
-                    </ul>
+                <a href="privacy.html" class="btn btn-secondary" style="margin-top: 2rem;">
+                    Read Privacy Policy →
+                </a>
+            </div>
+            <div class="privacy-visual fade-in">
+                <div class="shield-container">
+                    <div class="shield-rings"></div>
+                    <div class="shield">
+                        <div class="shield-icon">🛡️</div>
+                        <div class="shield-text">Privacy Protected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section class="installation" id="installation">
+        <div class="section-header fade-in">
+            <span class="section-badge">📦 Installation</span>
+            <h2 class="section-title">Get Started in 2 Minutes</h2>
+            <p class="section-description">
+                Simple installation process. No technical knowledge required.
+            </p>
+        </div>
+        <div class="steps-container">
+            <div class="step fade-in">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3 class="step-title">Download the Extension</h3>
+                    <p class="step-description">
+                        Click the button below to download the extension from GitHub. Extract the ZIP file.
+                    </p>
+                    <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/archive/refs/heads/main.zip" class="btn btn-primary" style="margin-top: 1rem;">
+                        Download ZIP
+                    </a>
+                </div>
+            </div>
+            <div class="step fade-in">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3 class="step-title">Open Chrome Extensions</h3>
+                    <p class="step-description">
+                        Go to Chrome settings and open the Extensions page. Enable Developer Mode.
+                    </p>
+                    <div class="step-code">chrome://extensions/</div>
+                </div>
+            </div>
+            <div class="step fade-in">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3 class="step-title">Load the Extension</h3>
+                    <p class="step-description">
+                        Click "Load unpacked" and select the <strong>gcr-downloader</strong> folder from the extracted files.
+                    </p>
+                </div>
+            </div>
+            <div class="step fade-in">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3 class="step-title">Start Downloading!</h3>
+                    <p class="step-description">
+                        Visit Google Classroom and click the download button. That's it! 🎉
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="cta-box animate-on-scroll">
-            <h2>Ready to Save Hours of Time?</h2>
-            <p>Join thousands of students who've already simplified their study workflow with ClassMate.</p>
+    <section class="cta" id="contact">
+        <div class="cta-card fade-in">
+            <h2 class="cta-title">Ready to Save Time?</h2>
+            <p class="cta-description">
+                Join students who are already saving hours every semester with ClassMate.
+            </p>
             <div class="cta-buttons">
-                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/releases" class="btn btn-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7,10 12,15 17,10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Download Now — It's Free
+                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" class="btn btn-primary">
+                    Get ClassMate Free
                 </a>
-                <a href="privacy.html" class="btn btn-secondary">
-                    Read Privacy Policy
+                <a href="mailto:muhammadfahadamjad27@gmail.com" class="btn btn-secondary">
+                    Contact Developer
                 </a>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer>
+    <footer class="footer">
         <div class="footer-container">
-            <a href="#" class="footer-logo">
-                <img src="icon128.png" alt="ClassMate">
-                ClassMate
-            </a>
-            
-            <div class="footer-links">
-                <a href="#features">Features</a>
-                <a href="#how-it-works">Installation</a>
-                <a href="#privacy">Privacy</a>
-                <a href="privacy.html">Privacy Policy</a>
-                <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" target="_blank">GitHub</a>
-                <a href="mailto:f240005@cfd.nu.edu.pk">Contact</a>
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="icon128.png" alt="ClassMate">
+                        <span>ClassMate</span>
+                    </div>
+                    <p class="footer-description">
+                        The open-source Chrome extension that helps students download their Google Classroom materials effortlessly.
+                    </p>
+                    <div class="footer-social">
+                        <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD" class="social-link" title="GitHub">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        </a>
+                        <a href="mailto:muhammadfahadamjad27@gmail.com" class="social-link" title="Email">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader">Source Code</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/blob/main/LICENSE">License</a></li>
+                        <li><a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues">Report Bug</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Contact</h4>
+                    <ul class="footer-links">
+                        <li><a href="mailto:muhammadfahadamjad27@gmail.com">Personal Email</a></li>
+                        <li><a href="mailto:f240005@cfd.nu.edu.pk">University Email</a></li>
+                        <li><a href="https://github.com/MUHAMMAD-FAHAD-AMJAD">GitHub Profile</a></li>
+                    </ul>
+                </div>
             </div>
-            
-            <div class="footer-copy">
-                Made with ❤️ by <a href="mailto:f240005@cfd.nu.edu.pk">Students, for Students</a>
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    © 2026 Muhammad Fahad Amjad • FAST-NUCES CFD Campus • Not affiliated with Google Inc.
+                </p>
+                <div class="footer-legal">
+                    <a href="privacy.html">Privacy</a>
+                    <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/blob/main/LICENSE">License</a>
+                </div>
             </div>
         </div>
     </footer>
 
     <script>
         // Navbar scroll effect
-        const nav = document.getElementById('nav');
+        const navbar = document.querySelector('.navbar');
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
+                navbar.classList.add('scrolled');
             } else {
-                nav.classList.remove('scrolled');
+                navbar.classList.remove('scrolled');
             }
         });
 
@@ -1222,9 +1474,7 @@
             });
         }, observerOptions);
 
-        document.querySelectorAll('.animate-on-scroll').forEach(el => {
-            observer.observe(el);
-        });
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1238,15 +1488,6 @@
                     });
                 }
             });
-        });
-
-        // Add stagger animation delay to cards
-        document.querySelectorAll('.feature-card').forEach((card, index) => {
-            card.style.transitionDelay = `${index * 0.1}s`;
-        });
-
-        document.querySelectorAll('.step').forEach((step, index) => {
-            step.style.transitionDelay = `${index * 0.15}s`;
         });
     </script>
 </body>

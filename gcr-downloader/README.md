@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.2-purple?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-1.0.5-purple?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/Manifest-V3-green?style=flat-square" alt="Manifest V3"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome"/>
@@ -19,7 +19,8 @@
 <p align="center">
   <a href="https://classmateextension.dev">🌐 Website</a> •
   <a href="https://classmateextension.dev/privacy.html">🔒 Privacy Policy</a> •
-  <a href="#-installation">📦 Install</a>
+  <a href="#-installation">📦 Install</a> •
+  <a href="#-contact">📧 Contact</a>
 </p>
 
 ---
@@ -124,7 +125,46 @@ Contributions welcome! Feel free to:
 
 ---
 
+## 👨‍💻 Author
+
+<p align="center">
+  <strong>Muhammad Fahad Amjad</strong><br>
+  <sub>Full Stack Developer & Chrome Extension Specialist</sub><br>
+  <sub>FAST-NUCES CFD Campus</sub>
+</p>
+
+<p align="center">
+  <a href="mailto:muhammadfahadamjad27@gmail.com">
+    <img src="https://img.shields.io/badge/Personal-muhammadfahadamjad27%40gmail.com-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Personal Email"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="mailto:f240005@cfd.nu.edu.pk">
+    <img src="https://img.shields.io/badge/University-f240005%40cfd.nu.edu.pk-0078D4?style=flat-square&logo=microsoft-outlook&logoColor=white" alt="University Email"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD">
+    <img src="https://img.shields.io/badge/GitHub-MUHAMMAD--FAHAD--AMJAD-181717?style=flat-square&logo=github" alt="GitHub"/>
+  </a>
+</p>
+
+---
+
+## 📧 Contact
+
+Have questions, suggestions, or found a bug? Reach out!
+
+- **Personal Email:** [muhammadfahadamjad27@gmail.com](mailto:muhammadfahadamjad27@gmail.com)
+- **University Email:** [f240005@cfd.nu.edu.pk](mailto:f240005@cfd.nu.edu.pk)
+- **GitHub Issues:** [Report a Bug](https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues)
+- **Website:** [classmateextension.dev](https://classmateextension.dev)
+
+---
+
 <p align="center">
   <strong>Made with ❤️ for students everywhere</strong><br>
-  <sub>Not affiliated with Google Inc.</sub>
+  <sub>© 2026 Muhammad Fahad Amjad • Not affiliated with Google Inc.</sub>
 </p>
