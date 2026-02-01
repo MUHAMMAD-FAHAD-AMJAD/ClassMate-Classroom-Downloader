@@ -3,130 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - ClassMate</title>
+    <title>Privacy Policy - ClassMate | Google Classroom Downloader</title>
+    <meta name="description" content="ClassMate Privacy Policy. Learn how we protect your data - 100% local processing, no data collection, no tracking.">
+    <link rel="icon" type="image/png" href="icon128.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --accent-green: #10b981;
+            --dark: #0a0a0f;
+            --dark-light: #12121a;
+            --dark-card: #16161f;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --gradient-primary: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             line-height: 1.8;
-            color: #333;
-            background: #f5f5f5;
+            color: var(--white);
+            background: var(--dark);
+            min-height: 100vh;
         }
+
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.2), transparent 60%),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(139, 92, 246, 0.1), transparent 50%),
+                var(--dark);
+        }
+
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 40px 24px;
         }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 40px;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 1.3rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .nav-logo img {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+        }
+
+        .nav-back {
+            color: var(--gray-light);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .nav-back:hover {
+            color: var(--white);
+        }
+
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 20px;
-            margin-bottom: 30px;
             text-align: center;
+            padding: 140px 0 60px;
         }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 10px 22px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+            margin-bottom: 24px;
+        }
+
         .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
         }
+
+        .header .updated {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* Content */
         .content {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            background: var(--dark-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 50px;
+            margin-bottom: 40px;
         }
+
         h2 {
-            color: #667eea;
-            margin: 30px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--white);
+            font-size: 1.5rem;
+            margin: 40px 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
+
         h2:first-of-type {
             margin-top: 0;
         }
+
         h3 {
-            color: #444;
-            margin: 20px 0 10px 0;
+            color: var(--gray-light);
+            font-size: 1.1rem;
+            margin: 28px 0 14px 0;
+            font-weight: 600;
         }
+
         p {
-            margin-bottom: 15px;
+            color: var(--gray-light);
+            margin-bottom: 16px;
         }
+
         ul, ol {
-            margin: 15px 0;
-            padding-left: 30px;
+            margin: 16px 0;
+            padding-left: 24px;
+            color: var(--gray-light);
         }
+
         li {
             margin-bottom: 10px;
         }
+
+        strong {
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 24px 0;
+            font-size: 0.95rem;
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
+            border: 1px solid var(--glass-border);
+            padding: 14px 16px;
             text-align: left;
         }
+
         th {
-            background: #667eea;
-            color: white;
+            background: var(--gradient-primary);
+            color: var(--white);
+            font-weight: 600;
         }
+
         tr:nth-child(even) {
-            background: #f9f9f9;
+            background: rgba(255, 255, 255, 0.02);
         }
+
+        td {
+            color: var(--gray-light);
+        }
+
+        /* Highlight boxes */
         .highlight {
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin: 24px 0;
         }
+
+        .highlight strong {
+            color: var(--accent-green);
+        }
+
         .warning {
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.05));
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin: 24px 0;
         }
+
+        .warning strong {
+            color: #f59e0b;
+        }
+
+        /* Code */
+        code {
+            background: var(--dark);
+            color: var(--accent);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+
+        /* Links */
+        a {
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--accent);
+        }
+
+        /* Summary box */
+        .summary-box {
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            padding: 32px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .summary-box h3 {
+            color: var(--white);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            margin: 0 0 16px 0;
+        }
+
+        .summary-box p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        /* Footer */
         .footer {
             text-align: center;
-            margin-top: 30px;
-            color: #666;
+            padding: 40px 0;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 40px;
         }
-        a {
-            color: #667eea;
+
+        .footer a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: var(--white);
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: all 0.2s;
         }
-        code {
-            background: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
+
+        .footer a:hover {
+            background: var(--gradient-primary);
+            border-color: transparent;
+        }
+
+        .footer p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav {
+                padding: 14px 20px;
+            }
+
+            .container {
+                padding: 20px 16px;
+            }
+
+            .header {
+                padding: 120px 0 40px;
+            }
+
+            .content {
+                padding: 30px 24px;
+                border-radius: 20px;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 10px 12px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="bg-gradient"></div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="icon128.png" alt="ClassMate">
+                ClassMate
+            </a>
+            <a href="index.html" class="nav-back">
+                ← Back to Home
+            </a>
+        </div>
+    </nav>
+
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>📚 ClassMate Privacy Policy</h1>
-            <p>Last Updated: January 26, 2026</p>
+            <div class="header-badge">🛡️ Privacy & Security</div>
+            <h1>Privacy Policy</h1>
+            <p class="updated">Last Updated: February 1, 2026</p>
         </div>
 
+        <!-- Content -->
         <div class="content">
-            <h2>Overview</h2>
-            <p>ClassMate is a Chrome extension that helps students download their Google Classroom materials. We are committed to protecting your privacy and being transparent about our data practices.</p>
+            <h2>📋 Overview</h2>
+            <p>ClassMate is a Chrome extension that helps students download their Google Classroom materials. We are committed to protecting your privacy and being completely transparent about our data practices.</p>
             
             <div class="highlight">
-                <strong>🛡️ Key Point:</strong> All data stays on YOUR device. We have no servers, no analytics, and no way to access your information.
+                <strong>🛡️ Key Point:</strong> All data stays on YOUR device. We have no servers, no analytics, and no way to access your information. Everything is processed locally.
             </div>
 
-            <h2>Data Collection</h2>
+            <h2>📊 Data Collection</h2>
             
-            <h3>What We Collect (Locally Only)</h3>
+            <h3>What We Store (Locally Only)</h3>
             <p>All data is stored <strong>locally on your device</strong> and never transmitted to external servers:</p>
             <ul>
                 <li><strong>Course Information:</strong> Course names and IDs from your Google Classroom (cached for performance)</li>
@@ -145,7 +410,7 @@
                 <li>❌ Any data for advertising purposes</li>
             </ul>
 
-            <h2>Data Storage</h2>
+            <h2>💾 Data Storage</h2>
             <p>All data is stored <strong>exclusively on your device</strong> using Chrome's built-in storage APIs:</p>
             
             <table>
@@ -175,7 +440,7 @@
                 <li>Your OAuth tokens are managed by Chrome, not by us</li>
             </ul>
 
-            <h2>Third-Party Access</h2>
+            <h2>🔗 Third-Party Access</h2>
             
             <h3>Google APIs</h3>
             <p>ClassMate uses the following Google APIs with <strong>read-only</strong> access:</p>
@@ -209,7 +474,7 @@
             </table>
 
             <div class="warning">
-                <strong>⚠️ Important:</strong> We request only <code>.readonly</code> permissions. ClassMate <strong>cannot</strong> modify, delete, or create any content in your Classroom or Drive.
+                <strong>⚠️ Important:</strong> We request only read-only permissions. ClassMate <strong>cannot</strong> modify, delete, or create any content in your Classroom or Drive.
             </div>
 
             <h3>No Third-Party Data Sharing</h3>
@@ -220,7 +485,7 @@
                 <li>We do NOT sell or monetize your data in any way</li>
             </ul>
 
-            <h2>Data Security</h2>
+            <h2>🔐 Data Security</h2>
             
             <h3>Protection Measures</h3>
             <ol>
@@ -239,7 +504,7 @@
                 <li>You can revoke access anytime at <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a></li>
             </ul>
 
-            <h2>Data Retention</h2>
+            <h2>🗑️ Data Retention</h2>
             <table>
                 <tr>
                     <th>Data Type</th>
@@ -268,7 +533,7 @@
                 </tr>
             </table>
 
-            <h2>Your Rights</h2>
+            <h2>👤 Your Rights</h2>
             
             <h3>View Your Data</h3>
             <p>You can inspect all stored data:</p>
@@ -285,7 +550,7 @@
                 <li><strong>Revoke access:</strong> Visit <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a> to revoke OAuth access</li>
             </ul>
 
-            <h2>Children's Privacy</h2>
+            <h2>👶 Children's Privacy</h2>
             <p>ClassMate may be used by students of all ages. We comply with COPPA (Children's Online Privacy Protection Act) by:</p>
             <ul>
                 <li>Not collecting any personal information</li>
@@ -294,17 +559,17 @@
                 <li>Storing all data locally on the device</li>
             </ul>
 
-            <h2>Changes to This Policy</h2>
+            <h2>📝 Changes to This Policy</h2>
             <p>We may update this privacy policy occasionally. Changes will be reflected in the "Last Updated" date at the top of this document.</p>
 
-            <h2>Contact</h2>
+            <h2>📧 Contact</h2>
             <p>If you have questions about this privacy policy or ClassMate's data practices:</p>
             <ul>
                 <li><strong>Email:</strong> <a href="mailto:f240005@cfd.nu.edu.pk">f240005@cfd.nu.edu.pk</a></li>
-                <li><strong>GitHub:</strong> <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues">Report an Issue</a></li>
+                <li><strong>GitHub:</strong> <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues" target="_blank">Report an Issue</a></li>
             </ul>
 
-            <h2>Summary</h2>
+            <h2>📌 Quick Summary</h2>
             <table>
                 <tr>
                     <th>Question</th>
@@ -336,14 +601,16 @@
                 </tr>
             </table>
 
-            <div class="highlight">
-                <strong>TL;DR:</strong> ClassMate stores everything locally on your device. We don't have servers, we don't collect data, and we don't share anything with anyone. Your privacy is protected by design.
+            <div class="summary-box">
+                <h3>TL;DR</h3>
+                <p>ClassMate stores everything locally on your device. We don't have servers, we don't collect data, and we don't share anything with anyone. Your privacy is protected by design.</p>
             </div>
         </div>
 
+        <!-- Footer -->
         <div class="footer">
-            <p><a href="index.html">← Back to Home</a></p>
-            <p style="margin-top: 10px;">© 2026 ClassMate. Open source under MIT License.</p>
+            <a href="index.html">← Back to Home</a>
+            <p>© 2026 ClassMate. Open source under MIT License.<br>Made with ❤️ by Muhammad Fahad Amjad</p>
         </div>
     </div>
 </body>
