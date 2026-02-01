@@ -5,20 +5,12 @@ gcr-downloader.pem
 *.key
 *.crx
 
-# Build/Development artifacts
+# Development files (internal use only)
 extract_key.py
 extract_crx_key.py
 generate_extension_key.py
-
-# Duplicate subfolder (extension is at root)
-gcr-downloader/
-
-# System files
-.DS_Store
-Thumbs.db
-*.log
-
-# Environment
+PREMIUM_WEBSITE_PROMPT_TEMPLATE.md
+SESSION_HISTORY.md
 .env
 .env.local
 .env.*.local
