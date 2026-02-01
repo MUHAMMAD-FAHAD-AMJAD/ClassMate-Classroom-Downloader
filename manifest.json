@@ -1,8 +1,9 @@
 {
     "manifest_version": 3,
     "name": "ClassMate - Classroom Downloader",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "📚 Bulk download all your Google Classroom materials instantly! Auto-detects courses, downloads PDFs, slides, docs & more with one click.",
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7UM+3EvNmeofsB5PjYQNUho1juv6Od5GlSTxwE3HsR//vkYaijGSm8Eoq2PhcAk9u7Q9GOxO1Rma6g52kKMniMoyrRn2en6SINh4MT3Nsj2nfe0VKDDZGVzK57co7kNrxkxtSeScDKs5/0B/CE/m3u9WXXw0XWAOI/sl9aMFWDEUFgC2kZT0zE3yJCvQEQmN09/hG8AD9V5dazzO/gVXN6Y3gog5W3QSipelO/Ky7f3ASaSuB2x8UojUyZxe7x4Dd1ZF9g6G6artvpMVyQeCdmLuaeebW9kxFgKyNApzhXi+8dUe3IvjGDbjQFIvkpnQzfibRLyU6S+x/bHWGt0RKwIDAQAB",
     "homepage_url": "https://classmateextension.dev",
     "minimum_chrome_version": "102",
     "permissions": [

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="gcr-downloader/icons/icon128.png" alt="ClassMate Logo" width="128"/>
+  <img src="icons/icon128.png" alt="ClassMate Logo" width="128"/>
 </p>
 
 <h1 align="center">🎓 ClassMate</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.5-6366f1?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-1.0.6-6366f1?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Manifest-V3-10b981?style=for-the-badge" alt="Manifest V3"/>
   <img src="https://img.shields.io/badge/License-MIT-f59e0b?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome"/>
@@ -82,15 +82,16 @@ Modern, eye-friendly interface for late-night study sessions
 2. **Extract** the ZIP file to a folder
 3. **Open Chrome** → Navigate to `chrome://extensions/`
 4. **Enable** "Developer Mode" (toggle in top-right)
-5. **Click** "Load unpacked" → Select the `gcr-downloader` folder
+5. **Click** "Load unpacked" → Select the **extracted folder** (e.g., `ClassMate-Classroom-Downloader-main`)
 6. **Done!** 🎉 Visit Google Classroom and look for the green download button
+
+> ⚠️ **Important:** Load the main folder directly, NOT any subfolder!
 
 ### Method 2: Git Clone
 
 ```bash
 git clone https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader.git
-cd ClassMate-Classroom-Downloader
-# Then load gcr-downloader folder in Chrome
+# Then load the ClassMate-Classroom-Downloader folder in Chrome
 ```
 
 ---
@@ -113,20 +114,19 @@ cd ClassMate-Classroom-Downloader
 
 ```
 ClassMate-Classroom-Downloader/
-├── 📁 gcr-downloader/          # Chrome Extension Source
-│   ├── 📁 icons/               # Extension icons
-│   ├── 📁 utils/               # Utility modules
-│   ├── 📄 manifest.json        # Extension manifest (V3)
-│   ├── 📄 background.js        # Service worker
-│   ├── 📄 content.js           # Content script
-│   ├── 📄 popup.html           # Extension popup
-│   ├── 📄 popup.js             # Popup logic
-│   └── 📄 styles.css           # Styles
-├── 📁 docs/                    # Website (GitHub Pages)
-├── 📄 README.md                # This file
-├── 📄 LICENSE                  # MIT License
-├── 📄 CHANGELOG.md             # Version history
-└── 📄 PRIVACY_POLICY.md        # Privacy policy
+├── 📁 icons/               # Extension icons
+├── 📁 utils/               # Utility modules
+├── 📁 docs/                # Website (GitHub Pages)
+├── 📄 manifest.json        # Extension manifest (V3)
+├── 📄 background.js        # Service worker
+├── 📄 content.js           # Content script
+├── 📄 popup.html           # Extension popup
+├── 📄 popup.js             # Popup logic
+├── 📄 styles.css           # Styles
+├── 📄 README.md            # This file
+├── 📄 LICENSE              # MIT License
+├── 📄 CHANGELOG.md         # Version history
+└── 📄 PRIVACY_POLICY.md    # Privacy policy
 ```
 
 ---

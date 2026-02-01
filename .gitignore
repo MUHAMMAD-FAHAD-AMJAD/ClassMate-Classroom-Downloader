@@ -5,8 +5,13 @@ gcr-downloader.pem
 *.key
 *.crx
 
-# Build artifacts
+# Build/Development artifacts
 extract_key.py
+extract_crx_key.py
+generate_extension_key.py
+
+# Duplicate subfolder (extension is at root)
+gcr-downloader/
 
 # System files
 .DS_Store
