@@ -11,7 +11,8 @@
 |------|-------|
 | **Project** | ClassMate - Google Classroom Bulk Downloader |
 | **Type** | Chrome Extension (Manifest V3) |
-| **Version** | 1.0.5 |
+| **Version** | 1.0.6 |
+| **Extension ID** | `nkgiceemmjegjjjkpmipihmdinbahonm` |
 | **Author** | Muhammad Fahad Amjad |
 | **Personal Email** | muhammadfahadamjad27@gmail.com |
 | **University Email** | f240005@cfd.nu.edu.pk |
@@ -19,15 +20,15 @@
 | **GitHub** | MUHAMMAD-FAHAD-AMJAD |
 | **Repo** | ClassMate-Classroom-Downloader |
 | **Website** | https://classmateextension.dev |
-| **Local Path** | D:\SLIDES DOWNLOADER\gcr-downloader |
+| **Local Path** | D:\SLIDES DOWNLOADER |
 
 ---
 
 ## 📁 KEY FILES STRUCTURE
 
 ```
-gcr-downloader/
-├── manifest.json       # Extension config (v1.0.5)
+ClassMate-Classroom-Downloader/  (ROOT - load this folder!)
+├── manifest.json       # Extension config (v1.0.6 with key)
 ├── background.js       # Service worker
 ├── popup.html/js       # Extension popup UI
 ├── content.js          # Page injection
@@ -48,6 +49,57 @@ gcr-downloader/
 ---
 
 ## 📝 SESSION LOGS
+
+---
+
+### Session #3 - February 1, 2026 (Continued)
+
+**Duration:** Medium session
+
+#### 🎯 Objectives Completed:
+
+1. **Repository Structure Cleanup**
+   - Removed duplicate `gcr-downloader/` subfolder from GitHub
+   - Extension files now at ROOT for easy installation
+   - Users just download and load main folder directly!
+
+2. **Extension ID Fix Tested & Confirmed Working**
+   - Extension ID consistent: `nkgiceemmjegjjjkpmipihmdinbahonm` ✅
+   - OAuth working via popup window fallback ✅
+   - Downloaded 20/20 files successfully ✅
+
+3. **Updated Documentation**
+   - README.md updated with new folder structure
+   - Clear install instructions (load ROOT folder)
+   - Version badge updated to 1.0.6
+
+#### ⚠️ Issues Found (Not Bugs):
+- The 403 error in logs is normal - trying to access course you're not enrolled as student
+- Extension still worked and downloaded all files!
+
+#### ✅ Current Status:
+- Extension fully working for everyone
+- Repository structure clean and simple
+- OAuth configured for consistent extension ID
+
+---
+
+### Session #3 - February 1, 2026 (Earlier)
+
+**Duration:** Medium session
+
+#### 🎯 Objectives Completed:
+
+1. **Fixed Extension ID Consistency Issue**
+   - Problem: Unpacked extensions got different IDs on different computers
+   - Solution: Added `key` field to manifest.json
+   - Result: ALL installations now get same ID: `nkgiceemmjegjjjkpmipihmdinbahonm`
+
+2. **Version Bumped to 1.0.6**
+
+3. **Google Cloud Console Updates Required**
+   - Chrome Extension Client: Item ID → `nkgiceemmjegjjjkpmipihmdinbahonm`
+   - Web Client: Redirect URI → `https://nkgiceemmjegjjjkpmipihmdinbahonm.chromiumapp.org/`
 
 ---
 
