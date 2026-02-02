@@ -1,0 +1,12 @@
+# Robots.txt for ClassMate Extension Website
+# https://classmateextension.dev
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://classmateextension.dev/sitemap.xml
+
+# Main pages
+Allow: /index.html
+Allow: /privacy.html
