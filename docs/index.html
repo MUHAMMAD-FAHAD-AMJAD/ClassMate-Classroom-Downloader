@@ -1514,6 +1514,81 @@
         </div>
     </section>
 
+    <!-- FAQ Section -->
+    <section class="section faq-section" id="faq">
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">❓ FAQ</span>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Common questions about ClassMate and how it works.</p>
+            </div>
+            
+            <div class="faq-grid">
+                <div class="faq-item animate-on-scroll">
+                    <h3>⚠️ Why do I see "This app isn't verified" warning?</h3>
+                    <p>Google shows this warning for apps that haven't completed their expensive verification process (~$15,000+). ClassMate is <strong>100% safe and open source</strong> - you can inspect our code on GitHub. To proceed:</p>
+                    <ol style="margin-left: 20px; margin-top: 10px; color: var(--gray-light);">
+                        <li>Click <strong>"Advanced"</strong> at the bottom left</li>
+                        <li>Click <strong>"Go to ClassMate (unsafe)"</strong></li>
+                        <li>Click <strong>"Continue"</strong> to grant permissions</li>
+                    </ol>
+                    <p style="margin-top: 10px; color: var(--accent-green);">✓ This is a one-time process. The extension works normally after this!</p>
+                </div>
+                
+                <div class="faq-item animate-on-scroll">
+                    <h3>🔒 Is ClassMate safe to use?</h3>
+                    <p>Yes! ClassMate is <strong>100% open source</strong>. You can view every line of code on our <a href="https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader" target="_blank" style="color: var(--primary-light);">GitHub repository</a>. We don't collect any data, don't have servers, and all processing happens locally on your device.</p>
+                </div>
+                
+                <div class="faq-item animate-on-scroll">
+                    <h3>💰 Is ClassMate free?</h3>
+                    <p>Yes, completely free! No premium features, no subscriptions, no ads. Made by a student for students. ❤️</p>
+                </div>
+                
+                <div class="faq-item animate-on-scroll">
+                    <h3>🎓 Can I use this with my university account?</h3>
+                    <p>Yes! ClassMate works with personal Gmail accounts and Google Workspace (school/university) accounts. Some strict university admins may block unverified apps - contact your IT department if you encounter issues.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <style>
+        .faq-section {
+            padding: 100px 0;
+        }
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+        .faq-item {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: var(--transition-normal);
+        }
+        .faq-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+        .faq-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--white);
+        }
+        .faq-item p, .faq-item ol {
+            font-size: 0.95rem;
+            color: var(--gray-light);
+            line-height: 1.7;
+        }
+        .faq-item ol li {
+            margin-bottom: 6px;
+        }
+    </style>
+
     <!-- CTA Section -->
     <section class="cta-section">
         <div class="cta-box animate-on-scroll">
