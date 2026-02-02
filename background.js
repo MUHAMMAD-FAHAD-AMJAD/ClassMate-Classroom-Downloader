@@ -77,7 +77,7 @@ import {
  * This MUST run at the top level to handle worker resurrection
  */
 (async function initializeServiceWorker() {
-    console.log('[GCR Background] Service worker starting (v1.0.5)...');
+    console.log('[GCR Background] Service worker starting (v1.0.6)...');
 
     try {
         // Initialize worker state (persistent queue, heartbeat)
