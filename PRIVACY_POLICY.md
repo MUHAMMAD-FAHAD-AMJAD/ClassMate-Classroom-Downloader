@@ -126,8 +126,8 @@ We may update this privacy policy occasionally. Changes will be reflected in the
 
 If you have questions about this privacy policy or ClassMate's data practices:
 
-- **GitHub Issues**: [Report an issue or ask a question](https://github.com/YOUR_USERNAME/classmate-extension/issues)
-- **Email**: [Your contact email]
+- **GitHub Issues**: [Report an issue or ask a question](https://github.com/MUHAMMAD-FAHAD-AMJAD/ClassMate-Classroom-Downloader/issues)
+- **Email**: f240005@cfd.nu.edu.pk
 
 ## Summary
 
