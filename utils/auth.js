@@ -514,7 +514,13 @@ async function revokeTokenInternal(revokeOnGoogle = true) {
                 // Optionally revoke on Google's servers
                 if (revokeOnGoogle) {
                     try {
-                        await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`);
+                        await fetch('https://accounts.google.com/o/oauth2/revoke', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: `token=${token}`
+                        });
                         console.log('[GCR Auth] Token revoked on Google servers');
                     } catch (e) {
                         console.warn('[GCR Auth] Failed to revoke token on Google:', e);

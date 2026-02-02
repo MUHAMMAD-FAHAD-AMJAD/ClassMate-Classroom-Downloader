@@ -153,8 +153,7 @@ ClassMate-Classroom-Downloader/
 | `identity` | Sign in with your Google account |
 | `storage` | Remember your preferences locally |
 | `downloads` | Save files to your computer |
-| `activeTab` | Interact with Google Classroom page |
-| `tabs` | Sync download state across tabs |
+| `tabs` | Detect Google Classroom pages |
 | `alarms` | Refresh authentication tokens |
 
 ---

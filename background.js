@@ -7,7 +7,7 @@
  * - Popup (selection UI)
  * - APIs (Classroom, Drive)
  * 
- * @version 2.0.0 - Added persistent state management for MV3 service worker lifecycle
+ * @version 1.0.6 - Added persistent state management for MV3 service worker lifecycle
  */
 
 // ============================================================================
